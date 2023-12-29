@@ -20,18 +20,11 @@ show-logs:
 serv:
 	uvicorn app.main:app --reload
 
-alembic_init:
-	alembic init app/db/migrations
-
-mmig: # run with "make mmig" or "make mmig message='migration message'"
-	if [ -z "$(message)" ]; then \
-		alembic revision --autogenerate; \
-	else \
-		alembic revision --autogenerate -m "$(message)"; \
-	fi
+mmig: ## Run migrations. Use "make mmig app='app'" or "make mmig app='app' message='App migrated'"
+	piccolo migrations new ${app} --auto ${if $(message),--desc=${message}}
 	
 mig:
-	alembic upgrade heads
+	piccolo migrations forwards all
 
 initial_data:
 	python initials/initial_data.py
@@ -39,8 +32,8 @@ initial_data:
 tests:
 	pytest --disable-warnings -vv -x
 
-requirements:
+reqm:
 	pip install -r requirements.txt
 
-urequirements:
+ureqm:
 	pip freeze > requirements.txt

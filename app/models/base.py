@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 from piccolo.table import Table
-from piccolo.columns import Varchar, UUID, Timestamptz
+from piccolo.columns import UUID, Timestamptz
 
 
 class BaseModel(Table):
@@ -9,7 +9,3 @@ class BaseModel(Table):
     id = UUID(default=uuid.uuid4, unique=True)
     created_at = Timestamptz(default=datetime.now)
     updated_at = Timestamptz(default=datetime.now)
-
-
-class File(BaseModel):
-    resource_type = Varchar(length=20)
