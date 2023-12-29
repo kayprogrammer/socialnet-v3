@@ -6,42 +6,45 @@ from piccolo.columns.column_types import Date
 from piccolo.columns.column_types import Email
 from piccolo.columns.column_types import ForeignKey
 from piccolo.columns.column_types import Secret
-from piccolo.columns.column_types import Serial
 from piccolo.columns.column_types import Timestamptz
+from piccolo.columns.column_types import UUID
 from piccolo.columns.column_types import Varchar
 from piccolo.columns.defaults.date import DateNow
 from piccolo.columns.defaults.timestamptz import TimestamptzNow
+from piccolo.columns.defaults.uuid import UUID4
 from piccolo.columns.indexes import IndexMethod
 from piccolo.table import Table
 
 
 class City(Table, tablename="city", schema=None):
-    id = Serial(
+    id = UUID(
+        default=UUID4(),
         null=False,
         primary_key=True,
-        unique=False,
+        unique=True,
         index=False,
         index_method=IndexMethod.btree,
         choices=None,
-        db_column_name="id",
+        db_column_name=None,
         secret=False,
     )
 
 
 class File(Table, tablename="file", schema=None):
-    id = Serial(
+    id = UUID(
+        default=UUID4(),
         null=False,
         primary_key=True,
-        unique=False,
+        unique=True,
         index=False,
         index_method=IndexMethod.btree,
         choices=None,
-        db_column_name="id",
+        db_column_name=None,
         secret=False,
     )
 
 
-ID = "2023-12-29T17:18:32:824456"
+ID = "2023-12-29T17:35:17:208986"
 VERSION = "1.2.0"
 DESCRIPTION = ""
 
@@ -52,11 +55,11 @@ async def forwards():
     )
 
     manager.add_table(
-        class_name="City", tablename="city", schema=None, columns=None
+        class_name="User", tablename="base_user", schema=None, columns=None
     )
 
     manager.add_table(
-        class_name="User", tablename="base_user", schema=None, columns=None
+        class_name="City", tablename="city", schema=None, columns=None
     )
 
     manager.add_table(
@@ -64,104 +67,21 @@ async def forwards():
     )
 
     manager.add_column(
-        table_class_name="City",
-        tablename="city",
-        column_name="id",
-        db_column_name="id",
-        column_class_name="Serial",
-        column_class=Serial,
-        params={
-            "null": False,
-            "primary_key": True,
-            "unique": False,
-            "index": False,
-            "index_method": IndexMethod.btree,
-            "choices": None,
-            "db_column_name": "id",
-            "secret": False,
-        },
-        schema=None,
-    )
-
-    manager.add_column(
-        table_class_name="City",
-        tablename="city",
-        column_name="created_at",
-        db_column_name="created_at",
-        column_class_name="Timestamptz",
-        column_class=Timestamptz,
-        params={
-            "default": TimestamptzNow(),
-            "null": False,
-            "primary_key": False,
-            "unique": False,
-            "index": False,
-            "index_method": IndexMethod.btree,
-            "choices": None,
-            "db_column_name": None,
-            "secret": False,
-        },
-        schema=None,
-    )
-
-    manager.add_column(
-        table_class_name="City",
-        tablename="city",
-        column_name="updated_at",
-        db_column_name="updated_at",
-        column_class_name="Timestamptz",
-        column_class=Timestamptz,
-        params={
-            "default": TimestamptzNow(),
-            "null": False,
-            "primary_key": False,
-            "unique": False,
-            "index": False,
-            "index_method": IndexMethod.btree,
-            "choices": None,
-            "db_column_name": None,
-            "secret": False,
-        },
-        schema=None,
-    )
-
-    manager.add_column(
-        table_class_name="City",
-        tablename="city",
-        column_name="name",
-        db_column_name="name",
-        column_class_name="Varchar",
-        column_class=Varchar,
-        params={
-            "length": 100,
-            "default": "",
-            "null": False,
-            "primary_key": False,
-            "unique": False,
-            "index": False,
-            "index_method": IndexMethod.btree,
-            "choices": None,
-            "db_column_name": None,
-            "secret": False,
-        },
-        schema=None,
-    )
-
-    manager.add_column(
         table_class_name="User",
         tablename="base_user",
         column_name="id",
         db_column_name="id",
-        column_class_name="Serial",
-        column_class=Serial,
+        column_class_name="UUID",
+        column_class=UUID,
         params={
+            "default": UUID4(),
             "null": False,
             "primary_key": True,
-            "unique": False,
+            "unique": True,
             "index": False,
             "index_method": IndexMethod.btree,
             "choices": None,
-            "db_column_name": "id",
+            "db_column_name": None,
             "secret": False,
         },
         schema=None,
@@ -537,20 +457,106 @@ async def forwards():
     )
 
     manager.add_column(
-        table_class_name="File",
-        tablename="file",
+        table_class_name="City",
+        tablename="city",
         column_name="id",
         db_column_name="id",
-        column_class_name="Serial",
-        column_class=Serial,
+        column_class_name="UUID",
+        column_class=UUID,
         params={
+            "default": UUID4(),
             "null": False,
             "primary_key": True,
+            "unique": True,
+            "index": False,
+            "index_method": IndexMethod.btree,
+            "choices": None,
+            "db_column_name": None,
+            "secret": False,
+        },
+        schema=None,
+    )
+
+    manager.add_column(
+        table_class_name="City",
+        tablename="city",
+        column_name="created_at",
+        db_column_name="created_at",
+        column_class_name="Timestamptz",
+        column_class=Timestamptz,
+        params={
+            "default": TimestamptzNow(),
+            "null": False,
+            "primary_key": False,
             "unique": False,
             "index": False,
             "index_method": IndexMethod.btree,
             "choices": None,
-            "db_column_name": "id",
+            "db_column_name": None,
+            "secret": False,
+        },
+        schema=None,
+    )
+
+    manager.add_column(
+        table_class_name="City",
+        tablename="city",
+        column_name="updated_at",
+        db_column_name="updated_at",
+        column_class_name="Timestamptz",
+        column_class=Timestamptz,
+        params={
+            "default": TimestamptzNow(),
+            "null": False,
+            "primary_key": False,
+            "unique": False,
+            "index": False,
+            "index_method": IndexMethod.btree,
+            "choices": None,
+            "db_column_name": None,
+            "secret": False,
+        },
+        schema=None,
+    )
+
+    manager.add_column(
+        table_class_name="City",
+        tablename="city",
+        column_name="name",
+        db_column_name="name",
+        column_class_name="Varchar",
+        column_class=Varchar,
+        params={
+            "length": 100,
+            "default": "",
+            "null": False,
+            "primary_key": False,
+            "unique": False,
+            "index": False,
+            "index_method": IndexMethod.btree,
+            "choices": None,
+            "db_column_name": None,
+            "secret": False,
+        },
+        schema=None,
+    )
+
+    manager.add_column(
+        table_class_name="File",
+        tablename="file",
+        column_name="id",
+        db_column_name="id",
+        column_class_name="UUID",
+        column_class=UUID,
+        params={
+            "default": UUID4(),
+            "null": False,
+            "primary_key": True,
+            "unique": True,
+            "index": False,
+            "index_method": IndexMethod.btree,
+            "choices": None,
+            "db_column_name": None,
             "secret": False,
         },
         schema=None,
