@@ -26,11 +26,7 @@ async def change_permissions(
 
     """
     if not await User.exists().where(User.email == email).run():
-        print(
-            colored_string(
-                f"User {email} doesn't exist!", level=Level.medium
-            )
-        )
+        print(colored_string(f"User {email} doesn't exist!", level=Level.medium))
         return
 
     params: t.Dict[t.Union[Column, str], bool] = {}
@@ -45,9 +41,7 @@ async def change_permissions(
         params[User.active] = active
 
     if params:
-        await User.update(params).where(
-            User.email == email
-        ).run()
+        await User.update(params).where(User.email == email).run()
     else:
         print(colored_string("No changes detected", level=Level.medium))
         return

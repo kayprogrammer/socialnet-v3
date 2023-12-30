@@ -1,7 +1,7 @@
-from app.models.base import BaseModel
+from app.core.config import settings
+from app.models.base.tables import BaseModel
 from piccolo.columns import (
     Varchar,
-    UUID,
     Timestamptz,
     Email,
     ForeignKey,
@@ -9,6 +9,7 @@ from piccolo.columns import (
     Boolean,
     Date,
     Secret,
+    SmallInt,
 )
 from piccolo.utils.sync import run_sync
 from piccolo.columns.readable import Readable
@@ -20,11 +21,14 @@ import hashlib
 
 logger = logging.getLogger(__name__)
 
+
 class City(BaseModel):
     name = Varchar(length=100)
 
+
 class File(BaseModel):
     resource_type = Varchar(length=20)
+
 
 class User(BaseModel, tablename="base_user"):
     first_name = Varchar(length=50)
@@ -107,9 +111,7 @@ class User(BaseModel, tablename="base_user"):
             raise ValueError("The password is too long.")
 
         if password.startswith("pbkdf2_sha256"):
-            logger.warning(
-                "Tried to create a user with an already hashed password."
-            )
+            logger.warning("Tried to create a user with an already hashed password.")
             raise ValueError("Do not pass a hashed password.")
 
     ###########################################################################
@@ -132,9 +134,7 @@ class User(BaseModel, tablename="base_user"):
         elif isinstance(user, int):
             clause = cls.id == user
         else:
-            raise ValueError(
-                "The `user` arg must be a user id, or an email."
-            )
+            raise ValueError("The `user` arg must be a user id, or an email.")
 
         cls._validate_password(password=password)
 
@@ -243,9 +243,7 @@ class User(BaseModel, tablename="base_user"):
             if iterations != cls._pbkdf2_iteration_count:
                 await cls.update_password(email, password)
 
-            await cls.update({cls.last_login: datetime.now()}).where(
-                cls.email == email
-            )
+            await cls.update({cls.last_login: datetime.now()}).where(cls.email == email)
             return response["id"]
         else:
             return None
@@ -253,9 +251,7 @@ class User(BaseModel, tablename="base_user"):
     ###########################################################################
 
     @classmethod
-    async def create_user(
-        cls, email: str, password: str, **extra_params
-    ):
+    async def create_user(cls, email: str, password: str, **extra_params):
         """
         Creates a new user, and saves it in the database. It is recommended to
         use this rather than instantiating and saving ``User`` directly, as
@@ -276,3 +272,23 @@ class User(BaseModel, tablename="base_user"):
         await user.save()
         return user
 
+
+class Jwt(BaseModel):
+    user = ForeignKey(references=User, on_delete=OnDelete.cascade, unique=True)
+    access = Varchar(1000)
+    refresh = Varchar(1000)
+
+    def __repr__(self):
+        return f"Access - {self.access} | Refresh - {self.refresh}"
+
+
+class Otp(BaseModel):
+    user = ForeignKey(references=User, on_delete=OnDelete.cascade, unique=True)
+    code = SmallInt()
+
+    def check_expiration(self):
+        now = datetime.utcnow()
+        diff = now - self.updated_at
+        if diff.total_seconds() > settings.EMAIL_OTP_EXPIRE_SECONDS:
+            return True
+        return False

@@ -58,13 +58,9 @@ async def forwards():
         class_name="User", tablename="base_user", schema=None, columns=None
     )
 
-    manager.add_table(
-        class_name="City", tablename="city", schema=None, columns=None
-    )
+    manager.add_table(class_name="City", tablename="city", schema=None, columns=None)
 
-    manager.add_table(
-        class_name="File", tablename="file", schema=None, columns=None
-    )
+    manager.add_table(class_name="File", tablename="file", schema=None, columns=None)
 
     manager.add_column(
         table_class_name="User",
