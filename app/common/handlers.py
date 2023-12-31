@@ -3,6 +3,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from http import HTTPStatus
 
+
 class ErrorCode:
     UNAUTHORIZED_USER = "unauthorized_user"
     NETWORK_FAILURE = "network_failure"

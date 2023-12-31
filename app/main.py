@@ -17,6 +17,7 @@ async def lifespan(app: FastAPI):
     # Close Database connection pool
     await engine.close_connection_pool()
 
+
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version="3.0.0",
@@ -47,6 +48,7 @@ app.add_middleware(
 )
 
 app.include_router(main_router, prefix="/api/v3")
+
 
 @app.get("/api/v3/healthcheck", name="Healthcheck", tags=["Healthcheck"])
 async def healthcheck():

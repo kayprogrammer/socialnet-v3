@@ -9,7 +9,7 @@ from piccolo.columns import (
     Boolean,
     Date,
     Secret,
-    SmallInt,
+    BigInt,
 )
 from piccolo.utils.sync import run_sync
 from piccolo.columns.readable import Readable
@@ -18,6 +18,7 @@ import secrets
 import logging
 import typing as t
 import hashlib
+import random
 
 logger = logging.getLogger(__name__)
 
@@ -284,7 +285,7 @@ class Jwt(BaseModel):
 
 class Otp(BaseModel):
     user = ForeignKey(references=User, on_delete=OnDelete.cascade, unique=True)
-    code = SmallInt()
+    code = BigInt()
 
     def check_expiration(self):
         now = datetime.utcnow()
@@ -292,3 +293,14 @@ class Otp(BaseModel):
         if diff.total_seconds() > settings.EMAIL_OTP_EXPIRE_SECONDS:
             return True
         return False
+
+    @classmethod
+    async def get_or_create(cls, user_id):
+        code = random.randint(100000, 999999)
+        otp = await cls.objects().get_or_create(
+            cls.user == user_id, defaults={"code": code}
+        )
+        if not otp._was_created:
+            otp.code = code
+            await otp.save()
+        return otp
