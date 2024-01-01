@@ -1,3 +1,4 @@
+from uuid import UUID
 from app.core.config import settings
 from app.models.base.tables import BaseModel
 from piccolo.columns import (
@@ -14,10 +15,9 @@ from piccolo.columns import (
 from piccolo.utils.sync import run_sync
 from piccolo.columns.readable import Readable
 from datetime import datetime
-import secrets
 import logging
 import typing as t
-import hashlib
+from argon2 import PasswordHasher
 import random
 
 logger = logging.getLogger(__name__)
@@ -64,22 +64,8 @@ class User(BaseModel, tablename="base_user"):
     dob = Date(null=True)
 
     _min_password_length = 6
-    _max_password_length = 128
-    # The number of hash iterations recommended by OWASP:
-    # https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html#pbkdf2
-    _pbkdf2_iteration_count = 600_000
-
-    def __init__(self, **kwargs):
-        # Generating passwords upfront is expensive, so might need reworking.
-        password = kwargs.get("password", None)
-        if password:
-            if not password.startswith("pbkdf2_sha256"):
-                kwargs["password"] = self.__class__.hash_password(password)
-        super().__init__(**kwargs)
-
-    @classmethod
-    def get_salt(cls):
-        return secrets.token_hex(16)
+    _max_password_length = 24
+    _ph = PasswordHasher()
 
     @classmethod
     def get_readable(cls) -> Readable:
@@ -111,10 +97,6 @@ class User(BaseModel, tablename="base_user"):
         if len(password) > cls._max_password_length:
             raise ValueError("The password is too long.")
 
-        if password.startswith("pbkdf2_sha256"):
-            logger.warning("Tried to create a user with an already hashed password.")
-            raise ValueError("Do not pass a hashed password.")
-
     ###########################################################################
 
     @classmethod
@@ -132,7 +114,7 @@ class User(BaseModel, tablename="base_user"):
         """
         if isinstance(user, str):
             clause = cls.email == user
-        elif isinstance(user, int):
+        elif isinstance(user, UUID):
             clause = cls.id == user
         else:
             raise ValueError("The `user` arg must be a user id, or an email.")
@@ -145,9 +127,7 @@ class User(BaseModel, tablename="base_user"):
     ###########################################################################
 
     @classmethod
-    def hash_password(
-        cls, password: str, salt: str = "", iterations: t.Optional[int] = None
-    ) -> str:
+    def hash_password(cls, password: str) -> str:
         """
         Hashes the password, ready for storage, and for comparing during
         login.
@@ -159,36 +139,8 @@ class User(BaseModel, tablename="base_user"):
         if len(password) > cls._max_password_length:
             logger.warning("Excessively long password provided.")
             raise ValueError("The password is too long.")
-
-        if not salt:
-            salt = cls.get_salt()
-
-        if iterations is None:
-            iterations = cls._pbkdf2_iteration_count
-
-        hashed = hashlib.pbkdf2_hmac(
-            "sha256",
-            bytes(password, encoding="utf-8"),
-            bytes(salt, encoding="utf-8"),
-            iterations,
-        ).hex()
-        return f"pbkdf2_sha256${iterations}${salt}${hashed}"
-
-    def __setattr__(self, name: str, value: t.Any):
-        """
-        Make sure that if the password is set, it's stored in a hashed form.
-        """
-        if name == "password" and not value.startswith("pbkdf2_sha256"):
-            value = self.__class__.hash_password(value)
-
-        super().__setattr__(name, value)
-
-    @classmethod
-    def split_stored_password(cls, password: str) -> t.List[str]:
-        elements = password.split("$")
-        if len(elements) != 4:
-            raise ValueError("Unable to split hashed password")
-        return elements
+        hashed = cls._ph.hash(password)
+        return hashed
 
     ###########################################################################
 
@@ -217,37 +169,15 @@ class User(BaseModel, tablename="base_user"):
             logger.warning("Excessively long password provided.")
             return None
 
-        response = (
-            await cls.select(cls._meta.primary_key, cls.password)
-            .where(cls.email == email)
-            .first()
-            .run()
-        )
-        if not response:
-            # No match found. We still call hash_password
-            # here to mitigate the ability to enumerate
-            # users via response timings
-            cls.hash_password(password)
+        user = await cls.objects().get(cls.email == email)
+        if not user:
             return None
 
-        stored_password = response["password"]
-
-        algorithm, iterations_, salt, hashed = cls.split_stored_password(
-            stored_password
-        )
-        iterations = int(iterations_)
-
-        if cls.hash_password(password, salt, iterations) == stored_password:
-            # If the password was hashed in an earlier Piccolo version, update
-            # it so it's hashed with the currently recommended number of
-            # iterations:
-            if iterations != cls._pbkdf2_iteration_count:
-                await cls.update_password(email, password)
-
-            await cls.update({cls.last_login: datetime.now()}).where(cls.email == email)
-            return response["id"]
-        else:
+        if not cls._ph.verify(user.password, password):
             return None
+        user.last_login = datetime.now()
+        await user.save()
+        return user
 
     ###########################################################################
 
@@ -268,7 +198,7 @@ class User(BaseModel, tablename="base_user"):
             raise ValueError("An email must be provided.")
 
         cls._validate_password(password=password)
-
+        password = cls.hash_password(password)
         user = cls(email=email, password=password, **extra_params)
         await user.save()
         return user
