@@ -1,5 +1,6 @@
 from datetime import datetime
-from fastapi import APIRouter, BackgroundTasks
+from fastapi import APIRouter, BackgroundTasks, Depends
+from app.api.deps import get_current_user
 from app.api.utils.auth import Authentication
 from app.common.handlers import ErrorCode
 
@@ -209,3 +210,47 @@ async def login(
         "message": "Login successful",
         "data": {"access": access, "refresh": refresh},
     }
+
+
+@router.post(
+    "/refresh",
+    summary="Refresh tokens",
+    description="This endpoint refresh tokens by generating new access and refresh tokens for a user",
+    status_code=201,
+)
+async def refresh(data: RefreshTokensSchema) -> TokensResponseSchema:
+    token = data.refresh
+    jwt = await Jwt.objects().get(Jwt.refresh == token)
+    if not jwt:
+        raise RequestError(
+            err_code=ErrorCode.INVALID_TOKEN,
+            err_msg="Refresh token does not exist",
+            status_code=404,
+        )
+    if not await Authentication.decode_jwt(token):
+        raise RequestError(
+            err_code=ErrorCode.INVALID_TOKEN,
+            err_msg="Refresh token is invalid or expired",
+            status_code=401,
+        )
+
+    access = await Authentication.create_access_token({"user_id": str(jwt.user)})
+    refresh = await Authentication.create_refresh_token()
+
+    jwt.access = access
+    jwt.refresh = refresh
+    await jwt.save()
+    return {
+        "message": "Tokens refresh successful",
+        "data": {"access": access, "refresh": refresh},
+    }
+
+
+@router.get(
+    "/logout",
+    summary="Logout a user",
+    description="This endpoint logs a user out from our application",
+)
+async def logout(user: User = Depends(get_current_user)) -> ResponseSchema:
+    await Jwt.delete().where(Jwt.user == user.id)
+    return {"message": "Logout successful"}

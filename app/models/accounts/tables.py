@@ -173,8 +173,11 @@ class User(BaseModel, tablename="base_user"):
         if not user:
             return None
 
-        if not cls._ph.verify(user.password, password):
+        try:
+            cls._ph.verify(user.password, password)
+        except:
             return None
+
         user.last_login = datetime.now()
         await user.save()
         return user

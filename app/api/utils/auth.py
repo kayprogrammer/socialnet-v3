@@ -47,7 +47,7 @@ class Authentication:
         decoded = await Authentication.decode_jwt(token)
         if not decoded:
             return None
-        jwt_obj = await Jwt.objects().get(Jwt.user == decoded["user_id"])
+        jwt_obj = await Jwt.objects(Jwt.user).get(Jwt.user == decoded["user_id"])
         if not jwt_obj:
             return None
         return jwt_obj.user
