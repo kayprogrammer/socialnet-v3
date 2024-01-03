@@ -1,6 +1,6 @@
 from uuid import UUID
 from app.core.config import settings
-from app.models.base.tables import BaseModel
+from app.models.base.tables import BaseModel, File
 from piccolo.columns import (
     Varchar,
     Timestamptz,
@@ -25,11 +25,6 @@ logger = logging.getLogger(__name__)
 
 class City(BaseModel):
     name = Varchar(length=100)
-
-
-class File(BaseModel):
-    resource_type = Varchar(length=20)
-
 
 class User(BaseModel, tablename="base_user"):
     first_name = Varchar(length=50)
