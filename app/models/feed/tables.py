@@ -60,22 +60,10 @@ class Reaction(BaseModel):
     comment = ForeignKey(Comment, on_delete=OnDelete.set_null, null=True, blank=True)
     reply = ForeignKey(Reply, on_delete=OnDelete.set_null, null=True, blank=True)
 
-    # class Meta:
-    #     ordering = ["-created_at"]
-    #     constraints = [
-    #         models.UniqueConstraint(
-    #             fields=["user", "post"],
-    #             name="unique_user_post_reaction",
-    #         ),
-    #         models.UniqueConstraint(
-    #             fields=["user", "comment"],
-    #             name="unique_user_comment_reaction",
-    #         ),
-    #         models.UniqueConstraint(
-    #             fields=["user", "reply"],
-    #             name="unique_user_reply_reaction",
-    #         ),
-    #     ]
+    # So I'm supposed to use composite unique constraints somewhere around here but piccolo
+    # has no provision currently for that (at least this  version) except by writing raw sql 
+    # in your migration files which is something I don't want to do. So I'll just focus on
+    # doing very good validations. But there will be no db level constraints  
 
     def __str__(self):
         return f"{self.user.full_name} ------ {self.rtype}"
