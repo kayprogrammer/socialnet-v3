@@ -11,9 +11,14 @@ DB = PostgresEngine(
         "password": settings.POSTGRES_PASSWORD,
         "port": settings.POSTGRES_PORT,
     },
-    log_responses=True,
+    log_responses=True if settings.DEBUG else False,
 )
 
 APP_REGISTRY = AppRegistry(
-    apps=["app.models.base.piccolo_app", "app.models.general.piccolo_app", "app.models.accounts.piccolo_app", "app.models.feed.piccolo_app"]
+    apps=[
+        "app.models.base.piccolo_app",
+        "app.models.general.piccolo_app",
+        "app.models.accounts.piccolo_app",
+        "app.models.feed.piccolo_app",
+    ]
 )

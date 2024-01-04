@@ -15,7 +15,11 @@ file_upload_data = {
     "timestamp": "16272637829",
 }
 
-user_data = {"name": f"{UserExample.first_name} {UserExample.last_name}", "slug": UserExample.username, "avatar": UserExample.avatar}
+user_data = {
+    "name": f"{UserExample.first_name} {UserExample.last_name}",
+    "slug": UserExample.username,
+    "avatar": UserExample.avatar,
+}
 
 latest_message_data = {
     "sender": user_data,
@@ -23,7 +27,7 @@ latest_message_data = {
     "file": "https://img.url",
 }
 
+
 class PostExample:
     slug = "john-doe-d10dde64-a242-4ed0-bd75-4c759644b3a6"
     file = "https://img.url"
-    

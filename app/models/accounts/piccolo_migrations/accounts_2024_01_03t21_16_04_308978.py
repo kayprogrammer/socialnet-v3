@@ -69,21 +69,15 @@ async def forwards():
         migration_id=ID, app_name="accounts", description=DESCRIPTION
     )
 
-    manager.add_table(
-        class_name="Otp", tablename="otp", schema=None, columns=None
-    )
+    manager.add_table(class_name="Otp", tablename="otp", schema=None, columns=None)
 
     manager.add_table(
         class_name="User", tablename="base_user", schema=None, columns=None
     )
 
-    manager.add_table(
-        class_name="City", tablename="city", schema=None, columns=None
-    )
+    manager.add_table(class_name="City", tablename="city", schema=None, columns=None)
 
-    manager.add_table(
-        class_name="Jwt", tablename="jwt", schema=None, columns=None
-    )
+    manager.add_table(class_name="Jwt", tablename="jwt", schema=None, columns=None)
 
     manager.add_column(
         table_class_name="Otp",

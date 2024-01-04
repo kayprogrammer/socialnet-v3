@@ -9,5 +9,6 @@ class BaseModel(Table):
     created_at = Timestamptz(default=datetime.now)
     updated_at = Timestamptz(auto_update=datetime.now)
 
+
 class File(BaseModel):
     resource_type = Varchar(length=20)

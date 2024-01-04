@@ -17,9 +17,7 @@ async def forwards():
         migration_id=ID, app_name="base", description=DESCRIPTION
     )
 
-    manager.add_table(
-        class_name="File", tablename="file", schema=None, columns=None
-    )
+    manager.add_table(class_name="File", tablename="file", schema=None, columns=None)
 
     manager.add_column(
         table_class_name="File",

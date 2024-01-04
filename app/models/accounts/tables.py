@@ -1,4 +1,7 @@
 from uuid import UUID
+
+from slugify import slugify
+from app.api.utils.utils import generate_random_alphanumeric_string
 from app.core.config import settings
 from app.models.base.tables import BaseModel, File
 from piccolo.columns import (
@@ -25,6 +28,7 @@ logger = logging.getLogger(__name__)
 
 class City(BaseModel):
     name = Varchar(length=100)
+
 
 class User(BaseModel, tablename="base_user"):
     first_name = Varchar(length=50)
@@ -200,6 +204,37 @@ class User(BaseModel, tablename="base_user"):
         user = cls(email=email, password=password, **extra_params)
         await user.save()
         return user
+
+    async def save(self, *args, **kwargs):
+        # Generate usename
+        print(self.id)
+        self.username = await self.generate_username(self.full_name)
+        return await super().save(*args, **kwargs)
+
+    async def generate_username(self, value):
+        if value:
+            unique_username = slugify(value)
+            obj = (
+                await User.objects()
+                .where(User.username == unique_username, User.id != self.id)
+                .first()
+            )
+            if obj:
+                unique_username = (
+                    f"{unique_username}-{generate_random_alphanumeric_string()}"
+                )
+                return await self.generate_username(unique_username)
+            return unique_username
+        return None
+
+    @property
+    def full_name(self):
+        name = None
+        first_name = self.first_name
+        last_name = self.last_name
+        if first_name and last_name:
+            name = f"{self.first_name} {self.last_name}"
+        return name
 
 
 class Jwt(BaseModel):

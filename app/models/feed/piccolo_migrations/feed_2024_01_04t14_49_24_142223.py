@@ -101,13 +101,9 @@ async def forwards():
         class_name="Comment", tablename="comment", schema=None, columns=None
     )
 
-    manager.add_table(
-        class_name="Post", tablename="post", schema=None, columns=None
-    )
+    manager.add_table(class_name="Post", tablename="post", schema=None, columns=None)
 
-    manager.add_table(
-        class_name="Reply", tablename="reply", schema=None, columns=None
-    )
+    manager.add_table(class_name="Reply", tablename="reply", schema=None, columns=None)
 
     manager.add_column(
         table_class_name="Reaction",

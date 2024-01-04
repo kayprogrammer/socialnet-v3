@@ -1,4 +1,3 @@
-from datetime import datetime
 from fastapi import APIRouter, BackgroundTasks, Depends
 from app.api.deps import get_current_user
 from app.api.utils.auth import Authentication
@@ -204,8 +203,6 @@ async def login(
     access = await Authentication.create_access_token({"user_id": str(user.id)})
     refresh = await Authentication.create_refresh_token()
     await Jwt.objects().create(user=user.id, access=access, refresh=refresh)
-    user.last_login = datetime.now()
-    await user.save()
     return {
         "message": "Login successful",
         "data": {"access": access, "refresh": refresh},
