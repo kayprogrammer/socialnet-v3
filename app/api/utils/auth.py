@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from jose import jwt
 
 from app.core.config import settings
-from app.models.accounts.tables import Jwt
+from app.models.accounts.tables import User
 
 ALGORITHM = "HS256"
 
@@ -47,7 +47,5 @@ class Authentication:
         decoded = await Authentication.decode_jwt(token)
         if not decoded:
             return None
-        jwt_obj = await Jwt.objects(Jwt.user).get(Jwt.user == decoded["user_id"])
-        if not jwt_obj:
-            return None
-        return jwt_obj.user
+        user = await User.objects().where(User.id == decoded["user_id"], User.access_token == token).first()
+        return user

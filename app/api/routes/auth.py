@@ -17,7 +17,7 @@ from app.api.schemas.auth import (
 
 from app.api.utils.emails import send_email
 
-from app.models.accounts.tables import Jwt, Otp, User
+from app.models.accounts.tables import Otp, User
 
 from app.common.handlers import RequestError
 
@@ -197,15 +197,14 @@ async def login(
             err_msg="Verify your email first",
             status_code=401,
         )
-    await Jwt.delete().where(Jwt.user == user.id)
 
-    # Create tokens and store in jwt model
-    access = await Authentication.create_access_token({"user_id": str(user.id)})
-    refresh = await Authentication.create_refresh_token()
-    await Jwt.objects().create(user=user.id, access=access, refresh=refresh)
+    # Create tokens and store them
+    user.access_token = await Authentication.create_access_token({"user_id": str(user.id)})
+    user.refresh_token = await Authentication.create_refresh_token()
+    await user.save()
     return {
         "message": "Login successful",
-        "data": {"access": access, "refresh": refresh},
+        "data": {"access": user.access_token, "refresh": user.refresh_token},
     }
 
 
@@ -217,29 +216,20 @@ async def login(
 )
 async def refresh(data: RefreshTokensSchema) -> TokensResponseSchema:
     token = data.refresh
-    jwt = await Jwt.objects().get(Jwt.refresh == token)
-    if not jwt:
-        raise RequestError(
-            err_code=ErrorCode.INVALID_TOKEN,
-            err_msg="Refresh token does not exist",
-            status_code=404,
-        )
-    if not await Authentication.decode_jwt(token):
+    user = await User.objects().get(User.refresh_token == token)
+    if not user or not (await Authentication.decode_jwt(token)):
         raise RequestError(
             err_code=ErrorCode.INVALID_TOKEN,
             err_msg="Refresh token is invalid or expired",
             status_code=401,
         )
 
-    access = await Authentication.create_access_token({"user_id": str(jwt.user)})
-    refresh = await Authentication.create_refresh_token()
-
-    jwt.access = access
-    jwt.refresh = refresh
-    await jwt.save()
+    user.access_token = await Authentication.create_access_token({"user_id": str(user.id)})
+    user.refresh_token = await Authentication.create_refresh_token()
+    await user.save()
     return {
         "message": "Tokens refresh successful",
-        "data": {"access": access, "refresh": refresh},
+        "data": {"access": user.access_token, "refresh": user.refresh_token},
     }
 
 
@@ -249,5 +239,6 @@ async def refresh(data: RefreshTokensSchema) -> TokensResponseSchema:
     description="This endpoint logs a user out from our application",
 )
 async def logout(user: User = Depends(get_current_user)) -> ResponseSchema:
-    await Jwt.delete().where(Jwt.user == user.id)
+    user.access_token = user.refresh_token = None
+    await user.save()
     return {"message": "Logout successful"}

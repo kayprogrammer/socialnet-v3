@@ -5,7 +5,7 @@ from piccolo.conf.apps import AppConfig, Command
 from .commands.change_password import change_password
 from .commands.change_permissions import change_permissions
 from .commands.create import create
-from .tables import City, Jwt, Otp, User
+from .tables import City, Otp, User
 
 CURRENT_DIRECTORY = os.path.dirname(os.path.abspath(__file__))
 
@@ -13,7 +13,7 @@ CURRENT_DIRECTORY = os.path.dirname(os.path.abspath(__file__))
 APP_CONFIG = AppConfig(
     app_name="accounts",
     migrations_folder_path=os.path.join(CURRENT_DIRECTORY, "piccolo_migrations"),
-    table_classes=[City, User, Jwt, Otp],
+    table_classes=[City, User, Otp],
     migration_dependencies=[],
     commands=[
         Command(callable=create, aliases=["new"]),

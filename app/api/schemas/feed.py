@@ -1,4 +1,3 @@
-from enum import Enum
 from uuid import UUID
 from pydantic import BaseModel, Field, validator
 from .base import (
@@ -12,7 +11,7 @@ from .schema_examples import file_upload_data
 from datetime import datetime
 from typing import Any, Optional, Dict, List
 
-from apps.feed.models import REACTION_CHOICES
+from app.models.feed.tables import ReactionChoices
 
 
 class PostSchema(BaseModel):
@@ -53,7 +52,7 @@ class PostInputResponseDataSchema(PostSchema):
     def resolve_file_upload_data(obj):
         if obj.image_upload_status:
             return FileProcessor.generate_file_signature(
-                key=obj.image_id,
+                key=obj.image.id,
                 folder="posts",
             )
         return None
@@ -75,7 +74,7 @@ class ReactionSchema(BaseModel):
 
 
 class ReactionInputSchema(BaseModel):
-    rtype: Enum("ReactionType", REACTION_CHOICES)
+    rtype: ReactionChoices
 
 
 class ReactionsResponseDataSchema(PaginatedResponseDataSchema):

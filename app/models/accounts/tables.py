@@ -57,6 +57,10 @@ class User(BaseModel, tablename="base_user"):
         help_text="When this user last logged in.",
     )
 
+    # Tokens
+    access_token = Varchar(1000, null=True)
+    refresh_token = Varchar(1000, null=True)
+
     # Profile Fields
     bio = Varchar(length=200, null=True)
     city = ForeignKey(references=City, on_delete=OnDelete.set_null, null=True)
@@ -207,7 +211,6 @@ class User(BaseModel, tablename="base_user"):
 
     async def save(self, *args, **kwargs):
         # Generate usename
-        print(self.id)
         self.username = await self.generate_username(self.full_name)
         return await super().save(*args, **kwargs)
 
@@ -235,16 +238,6 @@ class User(BaseModel, tablename="base_user"):
         if first_name and last_name:
             name = f"{self.first_name} {self.last_name}"
         return name
-
-
-class Jwt(BaseModel):
-    user = ForeignKey(references=User, on_delete=OnDelete.cascade, unique=True)
-    access = Varchar(1000)
-    refresh = Varchar(1000)
-
-    def __repr__(self):
-        return f"Access - {self.access} | Refresh - {self.refresh}"
-
 
 class Otp(BaseModel):
     user = ForeignKey(references=User, on_delete=OnDelete.cascade, unique=True)
