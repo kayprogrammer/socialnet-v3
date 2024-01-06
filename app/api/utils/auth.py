@@ -47,5 +47,9 @@ class Authentication:
         decoded = await Authentication.decode_jwt(token)
         if not decoded:
             return None
-        user = await User.objects().where(User.id == decoded["user_id"], User.access_token == token).first()
+        user = (
+            await User.objects()
+            .where(User.id == decoded["user_id"], User.access_token == token)
+            .first()
+        )
         return user

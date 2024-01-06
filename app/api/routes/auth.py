@@ -199,7 +199,9 @@ async def login(
         )
 
     # Create tokens and store them
-    user.access_token = await Authentication.create_access_token({"user_id": str(user.id)})
+    user.access_token = await Authentication.create_access_token(
+        {"user_id": str(user.id), "username": user.username}
+    )
     user.refresh_token = await Authentication.create_refresh_token()
     await user.save()
     return {
@@ -224,7 +226,9 @@ async def refresh(data: RefreshTokensSchema) -> TokensResponseSchema:
             status_code=401,
         )
 
-    user.access_token = await Authentication.create_access_token({"user_id": str(user.id)})
+    user.access_token = await Authentication.create_access_token(
+        {"user_id": str(user.id), "username": user.username}
+    )
     user.refresh_token = await Authentication.create_refresh_token()
     await user.save()
     return {

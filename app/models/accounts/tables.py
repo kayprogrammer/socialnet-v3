@@ -211,12 +211,19 @@ class User(BaseModel, tablename="base_user"):
 
     async def save(self, *args, **kwargs):
         # Generate usename
-        self.username = await self.generate_username(self.full_name)
+        self.username = await self.generate_username()
+        print(self.username)
         return await super().save(*args, **kwargs)
 
-    async def generate_username(self, value):
-        if value:
-            unique_username = slugify(value)
+    async def generate_username(self):
+        name = self.full_name
+        username = self.username
+        if name and (not username or not username.startswith(slugify(name))):
+            # The if statement above implies that username will only be created or altered
+            # if name exists and
+            # if username is none OR name has changed (checking if the current username tallies with the name)
+
+            unique_username = slugify(name)
             obj = (
                 await User.objects()
                 .where(User.username == unique_username, User.id != self.id)
@@ -228,7 +235,7 @@ class User(BaseModel, tablename="base_user"):
                 )
                 return await self.generate_username(unique_username)
             return unique_username
-        return None
+        return username
 
     @property
     def full_name(self):
@@ -238,6 +245,7 @@ class User(BaseModel, tablename="base_user"):
         if first_name and last_name:
             name = f"{self.first_name} {self.last_name}"
         return name
+
 
 class Otp(BaseModel):
     user = ForeignKey(references=User, on_delete=OnDelete.cascade, unique=True)
