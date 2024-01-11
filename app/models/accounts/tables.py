@@ -1,6 +1,7 @@
 from uuid import UUID
 
 from slugify import slugify
+from app.api.utils.file_processors import FileProcessor
 from app.api.utils.utils import generate_random_alphanumeric_string
 from app.core.config import settings
 from app.models.base.tables import BaseModel, File
@@ -212,7 +213,6 @@ class User(BaseModel, tablename="base_user"):
     async def save(self, *args, **kwargs):
         # Generate usename
         self.username = await self.generate_username()
-        print(self.username)
         return await super().save(*args, **kwargs)
 
     async def generate_username(self):
@@ -223,7 +223,7 @@ class User(BaseModel, tablename="base_user"):
             # if name exists and
             # if username is none OR name has changed (checking if the current username tallies with the name)
 
-            unique_username = slugify(name)
+            unique_username = self.username or slugify(name)
             obj = (
                 await User.objects()
                 .where(User.username == unique_username, User.id != self.id)
@@ -233,7 +233,8 @@ class User(BaseModel, tablename="base_user"):
                 unique_username = (
                     f"{unique_username}-{generate_random_alphanumeric_string()}"
                 )
-                return await self.generate_username(unique_username)
+                self.username = unique_username
+                return await self.generate_username()
             return unique_username
         return username
 
@@ -245,6 +246,17 @@ class User(BaseModel, tablename="base_user"):
         if first_name and last_name:
             name = f"{self.first_name} {self.last_name}"
         return name
+
+    @property
+    def get_avatar(self):
+        avatar = self.avatar
+        if avatar.id:
+            return FileProcessor.generate_file_url(
+                key=avatar.id,
+                folder="avatars",
+                content_type=avatar.resource_type,
+            )
+        return None
 
 
 class Otp(BaseModel):

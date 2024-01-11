@@ -1,6 +1,7 @@
 from uuid import UUID
-from pydantic import BaseModel, Field, validator
+from pydantic import Field, validator
 from .base import (
+    BaseModel,
     ResponseSchema,
     UserDataSchema,
     PaginatedResponseDataSchema,
@@ -20,7 +21,9 @@ class PostSchema(BaseModel):
     slug: str = Field(..., example="john-doe-d10dde64-a242-4ed0-bd75-4c759644b3a6")
     reactions_count: int
     comments_count: int
-    image: Optional[str] = Field(..., example="https://img.url", alias="get_image")
+    get_image: Optional[str] = Field(
+        ..., example="https://img.url", serialization_alias="image"
+    )
     created_at: datetime
     updated_at: datetime
 
@@ -35,7 +38,7 @@ class PostInputSchema(BaseModel):
 
 
 class PostsResponseDataSchema(PaginatedResponseDataSchema):
-    posts: List[PostSchema] = Field(..., alias="items")
+    items: List[PostSchema] = Field(..., serialization_alias="posts")
 
 
 class PostsResponseSchema(ResponseSchema):
@@ -78,7 +81,7 @@ class ReactionInputSchema(BaseModel):
 
 
 class ReactionsResponseDataSchema(PaginatedResponseDataSchema):
-    reactions: List[ReactionSchema] = Field(..., alias="items")
+    items: List[ReactionSchema] = Field(..., serialization_alias="reactions")
 
 
 class ReactionsResponseSchema(ResponseSchema):
@@ -116,7 +119,7 @@ class CommentInputSchema(BaseModel):
 
 
 class CommentsResponseDataSchema(PaginatedResponseDataSchema):
-    comments: List[CommentSchema] = Field(..., alias="items")
+    items: List[CommentSchema] = Field(..., serialization_alias="comments")
 
 
 class CommentsResponseSchema(ResponseSchema):

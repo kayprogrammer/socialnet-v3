@@ -1,5 +1,5 @@
 from enum import Enum
-from piccolo.columns import Varchar, ForeignKey, OnDelete, Text
+from piccolo.columns import Varchar, ForeignKey, OnDelete, Text, BigInt
 from app.api.utils.file_processors import FileProcessor
 from app.models.accounts.tables import User
 from app.models.base.tables import BaseModel, File
@@ -18,6 +18,9 @@ class FeedAbstract(BaseModel):
     author = ForeignKey(references=User, on_delete=OnDelete.cascade)
     text = Text()
     slug = Varchar(1000, unique=True)
+    reactions_count = (
+        BigInt()
+    )  # Doing this because inverse foreignkey isn't available in this orm yet.
 
     def save(self, *args, **kwargs):
         self.slug = f"{self.author.first_name}-{self.author.last_name}-{self.id}"
@@ -29,11 +32,14 @@ class FeedAbstract(BaseModel):
 
 class Post(FeedAbstract):
     image = ForeignKey(File, on_delete=OnDelete.set_null, null=True, blank=True)
+    comments_count = (
+        BigInt()
+    )  # Doing this because inverse foreignkey isn't available in this orm yet.
 
     @property
     def get_image(self):
         image = self.image
-        if image:
+        if image.id:
             return FileProcessor.generate_file_url(
                 key=image.id,
                 folder="posts",
@@ -44,6 +50,9 @@ class Post(FeedAbstract):
 
 class Comment(BaseModel):
     post = ForeignKey(Post, on_delete=OnDelete.cascade)
+    replies_count = (
+        BigInt()
+    )  # Doing this because inverse foreignkey isn't available in this orm yet.
 
 
 class Reply(BaseModel):
