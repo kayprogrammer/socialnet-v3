@@ -39,7 +39,7 @@ class Post(FeedAbstract):
     @property
     def get_image(self):
         image = self.image
-        if image.id:
+        if image and image.id:
             return FileProcessor.generate_file_url(
                 key=image.id,
                 folder="posts",

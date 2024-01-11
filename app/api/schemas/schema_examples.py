@@ -17,7 +17,7 @@ file_upload_data = {
 
 user_data = {
     "name": f"{UserExample.first_name} {UserExample.last_name}",
-    "slug": UserExample.username,
+    "username": UserExample.username,
     "avatar": UserExample.avatar,
 }
 

@@ -1,7 +1,6 @@
-from typing import Any, Optional
+from typing import Optional
 from pydantic import BaseModel as OriginalBaseModel, Field
-
-from app.api.utils.file_processors import FileProcessor
+from .schema_examples import user_data
 
 
 class ResponseSchema(OriginalBaseModel):
@@ -11,8 +10,17 @@ class ResponseSchema(OriginalBaseModel):
 
 class BaseModel(OriginalBaseModel):
     class Config:
+        arbitrary_types_allowed = True
         from_attributes = True
         populate_by_name = True
+
+        @staticmethod
+        def json_schema_extra(schema: dict, _):
+            props = {}
+            for k, v in schema.get("properties", {}).items():
+                if not v.get("hidden", False):
+                    props[k] = v
+            schema["properties"] = props
 
 
 class PaginatedResponseDataSchema(BaseModel):
@@ -26,14 +34,5 @@ class UserDataSchema(BaseModel):
     username: str
     get_avatar: Optional[str] = Field(..., serialization_alias="avatar")
 
-    @staticmethod
-    def resolve_file_upload_data(obj):
-        if obj.image_upload_status:
-            return FileProcessor.generate_file_signature(
-                key=obj.image.id,
-                folder="posts",
-            )
-        return None
-
-    # class Config:
-    #     schema_extra = {"example": user}
+    class Config:
+        json_schema_extra = {"example": user_data}

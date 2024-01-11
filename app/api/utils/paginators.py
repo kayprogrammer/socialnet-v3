@@ -1,6 +1,5 @@
 import math
 from app.common.handlers import ErrorCode, RequestError
-from app.models.feed.tables import Post
 
 
 class Paginator(object):

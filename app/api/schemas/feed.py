@@ -46,16 +46,18 @@ class PostsResponseSchema(ResponseSchema):
 
 
 class PostInputResponseDataSchema(PostSchema):
-    image: Optional[Any] = Field(..., exclude=True, hidden=True)
+    get_image: Optional[Any] = Field(..., exclude=True, hidden=True)
+    image_upload_id: Optional[Any] = Field(..., exclude=True, hidden=True)
     file_upload_data: Optional[Dict] = Field(None, example=file_upload_data)
     reactions_count: int = Field(None, exclude=True, hidden=True)
     comments_count: int = Field(None, exclude=True, hidden=True)
 
-    @staticmethod
-    def resolve_file_upload_data(obj):
-        if obj.image_upload_status:
+    @validator("file_upload_data", always=True)
+    def assemble_file_upload_data(cls, v, values):
+        image_upload_id = values.get("image_upload_id")
+        if image_upload_id:
             return FileProcessor.generate_file_signature(
-                key=obj.image.id,
+                key=image_upload_id,
                 folder="posts",
             )
         return None
