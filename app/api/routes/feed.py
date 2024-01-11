@@ -1,8 +1,10 @@
 from fastapi import APIRouter, BackgroundTasks, Depends
 from app.api.deps import get_current_user
+from app.api.routes.utils import get_post_object
 from app.api.schemas.feed import (
     PostInputResponseSchema,
     PostInputSchema,
+    PostResponseSchema,
     PostsResponseSchema,
 )
 from app.api.utils.auth import Authentication
@@ -51,7 +53,7 @@ async def retrieve_posts(page: int = 1) -> PostsResponseSchema:
 
 
 @router.post(
-    "/posts/",
+    "/posts",
     summary="Create Post",
     description=f"""
         This endpoint creates a new post
@@ -74,3 +76,13 @@ async def create_post(
     post = await Post.objects(Post.image).create(**data)
     post.image_upload_id = image_upload_id
     return {"message": "Post created", "data": post}
+
+
+@router.get(
+    "/posts/{slug}",
+    summary="Retrieve Single Post",
+    description="This endpoint retrieves a single post",
+)
+async def retrieve_post(slug: str) -> PostResponseSchema:
+    post = await get_post_object(slug, "detailed")
+    return {"message": "Post Detail fetched", "data": post}

@@ -1,5 +1,6 @@
 from enum import Enum
 from piccolo.columns import Varchar, ForeignKey, OnDelete, Text, BigInt
+from slugify import slugify
 from app.api.utils.file_processors import FileProcessor
 from app.models.accounts.tables import User
 from app.models.base.tables import BaseModel, File
@@ -23,7 +24,7 @@ class FeedAbstract(BaseModel):
     )  # Doing this because inverse foreignkey isn't available in this orm yet.
 
     def save(self, *args, **kwargs):
-        self.slug = f"{self.author.first_name}-{self.author.last_name}-{self.id}"
+        self.slug = slugify(f"{self.author.full_name} {self.id}")
         return super().save(*args, **kwargs)
 
     def __str__(self):
