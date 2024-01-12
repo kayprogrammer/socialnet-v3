@@ -1,14 +1,22 @@
-from fastapi import APIRouter, BackgroundTasks, Depends
+from fastapi import APIRouter, BackgroundTasks, Depends, Path, Request
 from app.api.deps import get_current_user
-from app.api.routes.utils import get_post_object
+from app.api.routes.utils import (
+    get_post_object,
+    get_reaction_focus_object,
+    get_reactions_queryset,
+)
 from app.api.schemas.feed import (
     PostInputResponseSchema,
     PostInputSchema,
     PostResponseSchema,
     PostsResponseSchema,
+    ReactionInputSchema,
+    ReactionResponseSchema,
+    ReactionsResponseSchema,
 )
 from app.api.utils.auth import Authentication
 from app.api.utils.file_processors import ALLOWED_IMAGE_TYPES
+from app.api.utils.notification import send_notification_in_socket
 from app.api.utils.paginators import Paginator
 from app.api.utils.utils import set_dict_attr
 from app.common.handlers import ErrorCode
@@ -32,7 +40,8 @@ from app.models.accounts.tables import Otp, User
 
 from app.common.handlers import RequestError
 from app.models.base.tables import File
-from app.models.feed.tables import Post
+from app.models.feed.tables import Post, Reaction
+from app.models.profiles.tables import Notification
 
 router = APIRouter()
 paginator = Paginator()
@@ -132,7 +141,7 @@ async def update_post(
 async def delete_post(
     slug: str, user: User = Depends(get_current_user)
 ) -> ResponseSchema:
-    post = await get_post_object(slug) # simple post object
+    post = await get_post_object(slug)  # simple post object
     if post.author != user.id:
         raise RequestError(
             err_code=ErrorCode.INVALID_OWNER,
@@ -140,3 +149,101 @@ async def delete_post(
         )
     await post.remove()
     return {"message": "Post deleted"}
+
+
+focus_query = Path(
+    ...,
+    description="Specify the usage. Use any of the three: POST, COMMENT, FEED",
+)
+slug_query = Path(..., description="Enter the slug of the post or comment or reply")
+
+
+@router.get(
+    "/reactions/{focus}/{slug}",
+    summary="Retrieve Latest Reactions of a Post, Comment, or Reply",
+    description="""
+        This endpoint retrieves paginated responses of reactions of post, comment, reply.
+    """,
+)
+async def retrieve_reactions(
+    focus: str = focus_query,
+    slug: str = slug_query,
+    reaction_type: str = None,
+    page: int = 1,
+) -> ReactionsResponseSchema:
+    reactions = await get_reactions_queryset(focus, slug, reaction_type)
+    paginated_data = await paginator.paginate_queryset(reactions, page)
+    return {"message": "Reactions fetched", "data": paginated_data}
+
+
+@router.post(
+    "/reactions/{focus}/{slug}",
+    summary="Create Reaction",
+    description="""
+        This endpoint creates a new reaction
+        rtype should be any of these:
+        
+        - LIKE    - LOVE
+        - HAHA    - WOW
+        - SAD     - ANGRY
+    """,
+    status_code=201,
+)
+async def create_reaction(
+    request: Request,
+    data: ReactionInputSchema,
+    focus: str = focus_query,
+    slug: str = slug_query,
+    user: User = Depends(get_current_user),
+) -> ReactionResponseSchema:
+    obj = await get_reaction_focus_object(focus, slug)
+
+    data = data.model_dump()
+    data["user"] = user
+    rtype = data.pop("rtype").value
+    obj_field = focus.lower()  # Focus object field (e.g post, comment, reply)
+    data[obj_field] = obj
+
+    # Update or create reaction
+    reaction = await Reaction.objects(Reaction.user, Reaction.user.avatar).get(
+        Reaction.user == user
+    )
+    if reaction:
+        reaction.rtype = rtype
+        await reaction.save()
+    else:
+        data["rtype"] = rtype
+        reaction = await Reaction.objects().create(**data)
+
+    print(obj.author.id)
+    # Create and Send Notification
+    if (
+        obj.author.id != user.id
+    ):  # Send notification only when it's not the user reacting to his data
+        ndata = (
+            getattr(Notification, obj_field) == obj.id
+        )  # e.g Notification.post == "value"
+        notification = await Notification.objects(
+            Notification.sender,
+            Notification.sender.avatar,
+            Notification.post,
+            Notification.comment,
+            Notification.comment.post,
+            Notification.reply,
+            Notification.reply.comment,
+            Notification.reply.comment.post,
+        ).get_or_create(
+            Notification.sender == user.id, Notification.ntype == "REACTION", ndata
+        )
+        if notification._was_created:
+            await notification.add_m2m(User(id=obj.author), m2m=Notification.receivers)
+
+            # Send to websocket
+            secured = request.scope["scheme"].endswith("s")  # if request is secured
+            await send_notification_in_socket(
+                secured,
+                request.headers["host"],
+                notification,
+            )
+
+    return {"message": "Reaction created", "data": reaction}

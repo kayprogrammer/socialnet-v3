@@ -15,9 +15,11 @@ from piccolo.columns import (
     Date,
     Secret,
     BigInt,
+    LazyTableReference,
 )
 from piccolo.utils.sync import run_sync
 from piccolo.columns.readable import Readable
+from piccolo.columns.m2m import M2M
 from datetime import datetime
 import logging
 import typing as t
@@ -66,6 +68,12 @@ class User(BaseModel, tablename="base_user"):
     bio = Varchar(length=200, null=True)
     city = ForeignKey(references=City, on_delete=OnDelete.set_null, null=True)
     dob = Date(null=True)
+    notifications = M2M(
+        LazyTableReference("NotificationToUserReceiver", module_path=__name__)
+    )
+    notifications_read = M2M(
+        LazyTableReference("NotificationToUserRead", module_path=__name__)
+    )
 
     _min_password_length = 6
     _max_password_length = 24

@@ -20,5 +20,6 @@ APP_REGISTRY = AppRegistry(
         "app.models.general.piccolo_app",
         "app.models.accounts.piccolo_app",
         "app.models.feed.piccolo_app",
+        "app.models.profiles.piccolo_app",
     ]
 )

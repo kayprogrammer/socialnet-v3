@@ -69,7 +69,11 @@ def http_exception_handler(request, exc):
 
 def validation_exception_handler(request, exc: RequestValidationError):
     # Get the original 'detail' list of errors
-    details = exc.raw_errors[0].exc.errors()
+    try:
+        details = exc.raw_errors[0].exc.errors()
+    except:
+        details = exc.errors()
+
     modified_details = {}
     for error in details:
         try:
