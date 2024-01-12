@@ -1,9 +1,11 @@
+from uuid import UUID
 from fastapi import APIRouter, BackgroundTasks, Depends, Path, Request
 from app.api.deps import get_current_user
 from app.api.routes.utils import (
     get_post_object,
     get_reaction_focus_object,
     get_reactions_queryset,
+    is_secured,
 )
 from app.api.schemas.feed import (
     PostInputResponseSchema,
@@ -215,14 +217,10 @@ async def create_reaction(
         data["rtype"] = rtype
         reaction = await Reaction.objects().create(**data)
 
-    print(obj.author.id)
     # Create and Send Notification
     if (
         obj.author.id != user.id
     ):  # Send notification only when it's not the user reacting to his data
-        ndata = (
-            getattr(Notification, obj_field) == obj.id
-        )  # e.g Notification.post == "value"
         notification = await Notification.objects(
             Notification.sender,
             Notification.sender.avatar,
@@ -233,17 +231,68 @@ async def create_reaction(
             Notification.reply.comment,
             Notification.reply.comment.post,
         ).get_or_create(
-            Notification.sender == user.id, Notification.ntype == "REACTION", ndata
+            Notification.sender == user.id,
+            Notification.ntype == "REACTION",
+            getattr(Notification, obj_field) == obj.id,
         )
         if notification._was_created:
             await notification.add_m2m(User(id=obj.author), m2m=Notification.receivers)
 
             # Send to websocket
-            secured = request.scope["scheme"].endswith("s")  # if request is secured
             await send_notification_in_socket(
-                secured,
+                is_secured(request),
                 request.headers["host"],
                 notification,
             )
 
     return {"message": "Reaction created", "data": reaction}
+
+
+@router.delete(
+    "/reactions/{id}",
+    summary="Remove Reaction",
+    description="""
+        This endpoint deletes a reaction.
+    """,
+)
+async def remove_reaction(
+    request: Request, id: UUID, user: User = Depends(get_current_user)
+) -> ResponseSchema:
+    reaction = await Reaction.objects(
+        Reaction.post, Reaction.comment, Reaction.reply
+    ).get(Reaction.id == id)
+    if not reaction:
+        raise RequestError(
+            err_code=ErrorCode.NON_EXISTENT,
+            err_msg="Reaction does not exist",
+            status_code=404,
+        )
+    if user.id != reaction.user:
+        raise RequestError(
+            err_code=ErrorCode.INVALID_OWNER,
+            err_msg="Not yours to delete",
+            status_code=401,
+        )
+
+    # Remove Reaction Notification
+    targeted_obj = reaction.targeted_obj
+    targeted_field = targeted_obj.__class__.__name__.lower()  # (post, comment or reply)
+
+    notification = (
+        await Notification.objects()
+        .where(
+            Notification.sender == user.id,
+            Notification.ntype == "REACTION",
+            getattr(Notification, targeted_field) == targeted_obj.id,
+        )
+        .first()
+    )
+    if notification:
+        # Send to websocket and delete notification
+        await send_notification_in_socket(
+            is_secured(request), request.headers["host"], notification, status="DELETED"
+        )
+        await notification.remove()
+
+    await reaction.remove()
+    return {"message": "Reaction deleted"}

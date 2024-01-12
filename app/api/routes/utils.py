@@ -1,4 +1,6 @@
 from typing import Literal
+
+from fastapi import Request
 from app.common.handlers import ErrorCode, RequestError
 
 from app.models.feed.tables import Comment, Post, Reply, Reaction
@@ -63,3 +65,7 @@ async def get_reactions_queryset(focus, slug, rtype=None):
         )  # Filter by reaction type if the query param is present
     reactions = Reaction.objects(Reaction.user, Reaction.user.avatar).where(*filter)
     return reactions
+
+
+def is_secured(request: Request) -> bool:
+    return request.scope["scheme"].endswith("s")  # if request is secured

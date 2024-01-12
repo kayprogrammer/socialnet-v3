@@ -1,4 +1,5 @@
 from enum import Enum
+from uuid import UUID
 from piccolo.columns import Varchar, ForeignKey, OnDelete, Text, BigInt
 from slugify import slugify
 from app.api.utils.file_processors import FileProcessor
@@ -19,8 +20,8 @@ class FeedAbstract(BaseModel):
     author = ForeignKey(references=User, on_delete=OnDelete.cascade)
     text = Text()
     slug = Varchar(1000, unique=True)
-    reactions_count = (
-        BigInt()
+    reactions_count = BigInt(
+        default=0
     )  # Doing this because inverse foreignkey isn't available in this orm yet.
 
     def save(self, *args, **kwargs):
@@ -33,8 +34,8 @@ class FeedAbstract(BaseModel):
 
 class Post(FeedAbstract):
     image = ForeignKey(File, on_delete=OnDelete.set_null, null=True, blank=True)
-    comments_count = (
-        BigInt()
+    comments_count = BigInt(
+        default=0
     )  # Doing this because inverse foreignkey isn't available in this orm yet.
 
     @property
@@ -51,8 +52,8 @@ class Post(FeedAbstract):
 
 class Comment(BaseModel):
     post = ForeignKey(Post, on_delete=OnDelete.cascade)
-    replies_count = (
-        BigInt()
+    replies_count = BigInt(
+        default=0
     )  # Doing this because inverse foreignkey isn't available in this orm yet.
 
 
@@ -66,7 +67,7 @@ class Reaction(BaseModel):
     post = ForeignKey(Post, on_delete=OnDelete.set_null, null=True, blank=True)
     comment = ForeignKey(Comment, on_delete=OnDelete.set_null, null=True, blank=True)
     reply = ForeignKey(Reply, on_delete=OnDelete.set_null, null=True, blank=True)
-
+    _targeted_obj_class = Post
     # So I'm supposed to use composite unique constraints somewhere around here but piccolo
     # has no provision currently for that (at least this  version) except by writing raw sql
     # in your migration files which is something I don't want to do. So I'll just focus on
@@ -81,5 +82,26 @@ class Reaction(BaseModel):
         # Return object the reaction object is targeted to (post, comment, or reply)
         obj = self.post
         if not obj:
-            obj = self.comment if self.comment else self.reply
+            obj = self.comment or self.reply
+            if self.comment:
+                self._targeted_obj_class = Comment
+            else:
+                self._targeted_obj_class = Reply
         return obj
+
+    def save(self, *args, **kwargs):
+        targeted_obj = (
+            self.targeted_obj
+        )  # Must stay on top to ensure the right targeted obj class
+        model: Post | Comment | Reply = (
+            self._targeted_obj_class
+        )  # e.g Post, Comment, Reply
+        if not self._exists_in_db:
+            targeted_obj_id = (
+                targeted_obj if isinstance(targeted_obj, UUID) else targeted_obj.id
+            )
+            # If creation, update reactions count
+            model.update({model.reactions_count: model.reactions_count + 1}).where(
+                model.id == targeted_obj_id
+            ).run_sync()
+        return super().save(*args, **kwargs)
