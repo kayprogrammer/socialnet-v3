@@ -1,5 +1,5 @@
 from uuid import UUID
-from fastapi import APIRouter, BackgroundTasks, Depends, Path, Request
+from fastapi import APIRouter, Depends, Path, Request
 from app.api.deps import get_current_user
 from app.api.routes.utils import (
     get_comment_object,
@@ -23,29 +23,15 @@ from app.api.schemas.feed import (
     ReactionsResponseSchema,
     ReplyResponseSchema,
 )
-from app.api.utils.auth import Authentication
 from app.api.utils.file_processors import ALLOWED_IMAGE_TYPES
 from app.api.utils.notification import send_notification_in_socket
 from app.api.utils.paginators import Paginator
 from app.api.utils.utils import set_dict_attr
 from app.common.handlers import ErrorCode
-from piccolo.query.methods.select import Count
 
 from app.api.schemas.base import ResponseSchema
-from app.api.schemas.auth import (
-    LoginUserSchema,
-    RefreshTokensSchema,
-    RegisterResponseSchema,
-    RegisterUserSchema,
-    RequestOtpSchema,
-    SetNewPasswordSchema,
-    TokensResponseSchema,
-    VerifyOtpSchema,
-)
 
-from app.api.utils.emails import send_email
-
-from app.models.accounts.tables import Otp, User
+from app.models.accounts.tables import User
 
 from app.common.handlers import RequestError
 from app.models.base.tables import File
@@ -465,13 +451,75 @@ async def delete_comment(
     await comment.remove()
     return {"message": "Comment Deleted"}
 
+
 @router.get(
     "/replies/{slug}",
     summary="Retrieve Reply",
     description="""
         This endpoint retrieves a reply.
-    """
+    """,
 )
 async def retrieve_reply(slug: str) -> ReplyResponseSchema:
     reply = await get_reply_object(slug)
     return {"message": "Reply Fetched", "data": reply}
+
+
+@router.put(
+    "/replies/{slug}",
+    summary="Update Reply",
+    description="""
+        This endpoint updates a particular reply.
+    """,
+)
+async def update_reply(
+    slug: str, data: CommentInputSchema, user: User = Depends(get_current_user)
+) -> ReplyResponseSchema:
+    reply = await get_reply_object(slug)
+    if reply.author.id != user.id:
+        raise RequestError(
+            err_code=ErrorCode.INVALID_OWNER,
+            err_msg="Not yours to edit",
+            status_code=401,
+        )
+    reply.text = data.text
+    await reply.save()
+    return {"message": "Reply Updated", "data": reply}
+
+
+@router.delete(
+    "/replies/{slug}",
+    summary="Delete reply",
+    description="""
+        This endpoint deletes a reply.
+    """,
+)
+async def delete_reply(
+    request: Request, slug: str, user: User = Depends(get_current_user)
+) -> ResponseSchema:
+    reply = await get_reply_object(slug)
+    if user.id != reply.author.id:
+        raise RequestError(
+            err_code=ErrorCode.INVALID_OWNER,
+            err_msg="Not yours to delete",
+            status_code=401,
+        )
+
+    # Remove Reply Notification
+    notification = (
+        await Notification.objects()
+        .where(
+            Notification.sender == user,
+            Notification.ntype == "REPLY",
+            Notification.reply == reply.id,
+        )
+        .first()
+    )
+    if notification:
+        # Send to websocket and delete notification
+        await send_notification_in_socket(
+            is_secured(request), request.headers["host"], notification, status="DELETED"
+        )
+        await notification.remove()
+
+    await reply.remove()
+    return {"message": "Reply Deleted"}
