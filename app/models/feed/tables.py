@@ -56,6 +56,16 @@ class Comment(FeedAbstract):
         default=0
     )  # Doing this because inverse foreignkey isn't available in this orm yet.
 
+    def save(self, *args, **kwargs):
+        if not self._exists_in_db:
+            # Update comments count for post when created
+            post = self.post
+            post_id = post if isinstance(post, UUID) else post.id
+            Post.update({Post.comments_count: Post.comments_count + 1}).where(
+                Post.id == post_id
+            ).run_sync()
+        return super().save(*args, **kwargs)
+
 
 class Reply(FeedAbstract):
     comment = ForeignKey(Comment, on_delete=OnDelete.cascade)

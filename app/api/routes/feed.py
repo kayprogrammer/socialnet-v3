@@ -8,6 +8,8 @@ from app.api.routes.utils import (
     is_secured,
 )
 from app.api.schemas.feed import (
+    CommentInputSchema,
+    CommentResponseSchema,
     CommentsResponseSchema,
     PostInputResponseSchema,
     PostInputSchema,
@@ -316,3 +318,31 @@ async def retrieve_comments(slug: str, page: int = 1) -> CommentsResponseSchema:
     )
     paginated_data = await paginator.paginate_queryset(comments, page)
     return {"message": "Comments Fetched", "data": paginated_data}
+
+
+@router.post(
+    "/posts/{slug}/comments",
+    summary="Create Comment",
+    description="""
+        This endpoint creates a comment for a particular post.
+    """,
+    status_code=201,
+)
+async def create_comment(
+    request: Request, slug: str, data: CommentInputSchema, user: User = Depends(get_current_user)
+) -> CommentResponseSchema:
+    post = await get_post_object(slug)
+    comment = await Comment.objects().create(post=post, author=user, text=data.text)
+
+    # Create and Send Notification
+    if user.id != post.author:
+        notification = await Notification.objects().create(
+            sender=user.id, ntype="COMMENT", comment=comment.id
+        )
+        await notification.add_m2m(User(id=post.author), m2m=Notification.receivers)
+
+        # Send to websocket
+        await send_notification_in_socket(
+            is_secured(request), request.headers["host"], notification
+        )
+    return {"message": "Comment Created", "data": comment}
