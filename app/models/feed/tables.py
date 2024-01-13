@@ -50,14 +50,14 @@ class Post(FeedAbstract):
         return None
 
 
-class Comment(BaseModel):
+class Comment(FeedAbstract):
     post = ForeignKey(Post, on_delete=OnDelete.cascade)
     replies_count = BigInt(
         default=0
     )  # Doing this because inverse foreignkey isn't available in this orm yet.
 
 
-class Reply(BaseModel):
+class Reply(FeedAbstract):
     comment = ForeignKey(Comment, on_delete=OnDelete.cascade)
 
 

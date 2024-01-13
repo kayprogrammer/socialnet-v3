@@ -8,6 +8,7 @@ from app.api.routes.utils import (
     is_secured,
 )
 from app.api.schemas.feed import (
+    CommentsResponseSchema,
     PostInputResponseSchema,
     PostInputSchema,
     PostResponseSchema,
@@ -42,7 +43,7 @@ from app.models.accounts.tables import Otp, User
 
 from app.common.handlers import RequestError
 from app.models.base.tables import File
-from app.models.feed.tables import Post, Reaction
+from app.models.feed.tables import Comment, Post, Reaction
 from app.models.profiles.tables import Notification
 
 router = APIRouter()
@@ -296,3 +297,22 @@ async def remove_reaction(
 
     await reaction.remove()
     return {"message": "Reaction deleted"}
+
+
+# COMMENTS
+
+
+@router.get(
+    "/posts/{slug}/comments",
+    summary="Retrieve Post Comments",
+    description="""
+        This endpoint retrieves comments of a particular post.
+    """,
+)
+async def retrieve_comments(slug: str, page: int = 1) -> CommentsResponseSchema:
+    post = await get_post_object(slug)
+    comments = Comment.objects(Comment.author, Comment.author.avatar).where(
+        Comment.post == post.id
+    )
+    paginated_data = await paginator.paginate_queryset(comments, page)
+    return {"message": "Comments Fetched", "data": paginated_data}
