@@ -402,3 +402,64 @@ async def create_reply(
             is_secured(request), request.headers["host"], notification
         )
     return {"message": "Reply Created", "data": reply}
+
+
+@router.put(
+    "/comments/{slug}",
+    summary="Update Comment",
+    description="""
+        This endpoint updates a particular comment.
+    """,
+)
+async def update_comment(
+    slug: str, data: CommentInputSchema, user: User = Depends(get_current_user)
+) -> CommentResponseSchema:
+    comment = await get_comment_object(slug)
+    if comment.author.id != user.id:
+        raise RequestError(
+            err_code=ErrorCode.INVALID_OWNER,
+            err_msg="Not yours to edit",
+            status_code=401,
+        )
+    comment.text = data.text
+    await comment.save()
+    return {"message": "Comment Updated", "data": comment}
+
+
+@router.delete(
+    "/comments/{slug}",
+    summary="Delete Comment",
+    description="""
+        This endpoint deletes a comment.
+    """,
+)
+async def delete_comment(
+    request: Request, slug: str, user: User = Depends(get_current_user)
+) -> ResponseSchema:
+    comment = await get_comment_object(slug)
+    if user.id != comment.author.id:
+        raise RequestError(
+            err_code=ErrorCode.INVALID_OWNER,
+            err_msg="Not yours to delete",
+            status_code=401,
+        )
+
+    # # Remove Comment Notification
+    notification = (
+        await Notification.objects()
+        .where(
+            Notification.sender == user.id,
+            Notification.ntype == "COMMENT",
+            Notification.comment == comment.id,
+        )
+        .first()
+    )
+    if notification:
+        # Send to websocket and delete notification
+        await send_notification_in_socket(
+            is_secured(request), request.headers["host"], notification, status="DELETED"
+        )
+        await notification.remove()
+
+    await comment.remove()
+    return {"message": "Comment Deleted"}

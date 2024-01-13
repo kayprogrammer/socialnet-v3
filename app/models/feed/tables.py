@@ -5,6 +5,7 @@ from slugify import slugify
 from app.api.utils.file_processors import FileProcessor
 from app.models.accounts.tables import User
 from app.models.base.tables import BaseModel, File
+from app.models.feed.utils import update_count
 
 
 class ReactionChoices(Enum):
@@ -61,10 +62,15 @@ class Comment(FeedAbstract):
             # Update comments count for post when created
             post = self.post
             post_id = post if isinstance(post, UUID) else post.id
-            Post.update({Post.comments_count: Post.comments_count + 1}).where(
-                Post.id == post_id
-            ).run_sync()
+            update_count(Post, post_id, "comments_count")
         return super().save(*args, **kwargs)
+
+    def remove(self, *args, **kwargs):
+        # Update comments count for post when deleted
+        post = self.post
+        post_id = post if isinstance(post, UUID) else post.id
+        update_count(Post, post_id, "comments_count", "remove")
+        return super().remove(*args, **kwargs)
 
 
 class Reply(FeedAbstract):
@@ -75,10 +81,15 @@ class Reply(FeedAbstract):
             # Update replies count for comment when created
             comment = self.comment
             comment_id = comment if isinstance(comment, UUID) else comment.id
-            Comment.update({Comment.replies_count: Comment.replies_count + 1}).where(
-                Comment.id == comment_id
-            ).run_sync()
+            update_count(Comment, comment_id, "replies_count")
         return super().save(*args, **kwargs)
+
+    def remove(self, *args, **kwargs):
+        # Update replies count for comment when removed
+        comment = self.comment
+        comment_id = comment if isinstance(comment, UUID) else comment.id
+        update_count(Comment, comment_id, "replies_count", "remove")
+        return super().remove(*args, **kwargs)
 
 
 class Reaction(BaseModel):
@@ -121,7 +132,20 @@ class Reaction(BaseModel):
                 targeted_obj if isinstance(targeted_obj, UUID) else targeted_obj.id
             )
             # If creation, update reactions count
-            model.update({model.reactions_count: model.reactions_count + 1}).where(
-                model.id == targeted_obj_id
-            ).run_sync()
+            update_count(model, targeted_obj_id)
         return super().save(*args, **kwargs)
+
+    def remove(self, *args, **kwargs):
+        targeted_obj = (
+            self.targeted_obj
+        )  # Must stay on top to ensure the right targeted obj class
+        model: Post | Comment | Reply = (
+            self._targeted_obj_class
+        )  # e.g Post, Comment, Reply
+        targeted_obj_id = (
+            targeted_obj if isinstance(targeted_obj, UUID) else targeted_obj.id
+        )
+        # If removal, update reactions count
+        update_count(model, targeted_obj_id, action="remove")
+
+        return super().remove(*args, **kwargs)
