@@ -70,6 +70,16 @@ class Comment(FeedAbstract):
 class Reply(FeedAbstract):
     comment = ForeignKey(Comment, on_delete=OnDelete.cascade)
 
+    def save(self, *args, **kwargs):
+        if not self._exists_in_db:
+            # Update replies count for comment when created
+            comment = self.comment
+            comment_id = comment if isinstance(comment, UUID) else comment.id
+            Comment.update({Comment.replies_count: Comment.replies_count + 1}).where(
+                Comment.id == comment_id
+            ).run_sync()
+        return super().save(*args, **kwargs)
+
 
 class Reaction(BaseModel):
     user = ForeignKey(User, on_delete=OnDelete.cascade)

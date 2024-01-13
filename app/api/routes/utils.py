@@ -67,5 +67,31 @@ async def get_reactions_queryset(focus, slug, rtype=None):
     return reactions
 
 
+async def get_comment_object(slug):
+    comment = await Comment.objects(
+        Comment.author, Comment.author.avatar, Comment.post
+    ).get(Comment.slug == slug)
+    if not comment:
+        raise RequestError(
+            err_code=ErrorCode.NON_EXISTENT,
+            err_msg="Comment does not exist",
+            status_code=404,
+        )
+    return comment
+
+
+async def get_reply_object(slug):
+    reply = await Reply.objects(Reply.author, Reply.author.avatar).get(
+        Reply.slug == slug
+    )
+    if not reply:
+        raise RequestError(
+            err_code=ErrorCode.NON_EXISTENT,
+            err_msg="Reply does not exist",
+            status_code=404,
+        )
+    return reply
+
+
 def is_secured(request: Request) -> bool:
     return request.scope["scheme"].endswith("s")  # if request is secured

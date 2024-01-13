@@ -2,6 +2,7 @@ from uuid import UUID
 from fastapi import APIRouter, BackgroundTasks, Depends, Path, Request
 from app.api.deps import get_current_user
 from app.api.routes.utils import (
+    get_comment_object,
     get_post_object,
     get_reaction_focus_object,
     get_reactions_queryset,
@@ -10,6 +11,7 @@ from app.api.routes.utils import (
 from app.api.schemas.feed import (
     CommentInputSchema,
     CommentResponseSchema,
+    CommentWithRepliesResponseSchema,
     CommentsResponseSchema,
     PostInputResponseSchema,
     PostInputSchema,
@@ -18,6 +20,7 @@ from app.api.schemas.feed import (
     ReactionInputSchema,
     ReactionResponseSchema,
     ReactionsResponseSchema,
+    ReplyResponseSchema,
 )
 from app.api.utils.auth import Authentication
 from app.api.utils.file_processors import ALLOWED_IMAGE_TYPES
@@ -45,7 +48,7 @@ from app.models.accounts.tables import Otp, User
 
 from app.common.handlers import RequestError
 from app.models.base.tables import File
-from app.models.feed.tables import Comment, Post, Reaction
+from app.models.feed.tables import Comment, Post, Reaction, Reply
 from app.models.profiles.tables import Notification
 
 router = APIRouter()
@@ -329,7 +332,10 @@ async def retrieve_comments(slug: str, page: int = 1) -> CommentsResponseSchema:
     status_code=201,
 )
 async def create_comment(
-    request: Request, slug: str, data: CommentInputSchema, user: User = Depends(get_current_user)
+    request: Request,
+    slug: str,
+    data: CommentInputSchema,
+    user: User = Depends(get_current_user),
 ) -> CommentResponseSchema:
     post = await get_post_object(slug)
     comment = await Comment.objects().create(post=post, author=user, text=data.text)
@@ -346,3 +352,53 @@ async def create_comment(
             is_secured(request), request.headers["host"], notification
         )
     return {"message": "Comment Created", "data": comment}
+
+
+@router.get(
+    "/comments/{slug}",
+    summary="Retrieve Comment with replies",
+    description="""
+        This endpoint retrieves a comment with replies.
+    """,
+)
+async def retrieve_comment_with_replies(
+    slug: str, page: int = 1
+) -> CommentWithRepliesResponseSchema:
+    comment = await get_comment_object(slug)
+    replies = Reply.objects(Reply.author, Reply.author.avatar).where(
+        Reply.comment == comment.id
+    )
+    paginated_data = await paginator.paginate_queryset(replies, page)
+    data = {"comment": comment, "replies": paginated_data}
+    return {"message": "Comment and Replies Fetched", "data": data}
+
+
+@router.post(
+    "/comments/{slug}",
+    summary="Create Reply",
+    description="""
+        This endpoint creates a reply for a comment.
+    """,
+    status_code=201,
+)
+async def create_reply(
+    request: Request,
+    slug: str,
+    data: CommentInputSchema,
+    user: User = Depends(get_current_user),
+) -> ReplyResponseSchema:
+    comment = await get_comment_object(slug)
+    reply = await Reply.objects().create(author=user, comment=comment, text=data.text)
+
+    # Create and Send Notification
+    if user.id != comment.author.id:
+        notification = await Notification.objects().create(
+            sender=user.id, ntype="REPLY", reply=reply.id
+        )
+        await notification.add_m2m(User(id=comment.author), m2m=Notification.receivers)
+
+        # Send to websocket
+        await send_notification_in_socket(
+            is_secured(request), request.headers["host"], notification
+        )
+    return {"message": "Reply Created", "data": reply}
