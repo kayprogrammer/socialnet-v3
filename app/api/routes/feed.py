@@ -6,6 +6,7 @@ from app.api.routes.utils import (
     get_post_object,
     get_reaction_focus_object,
     get_reactions_queryset,
+    get_reply_object,
     is_secured,
 )
 from app.api.schemas.feed import (
@@ -463,3 +464,14 @@ async def delete_comment(
 
     await comment.remove()
     return {"message": "Comment Deleted"}
+
+@router.get(
+    "/replies/{slug}",
+    summary="Retrieve Reply",
+    description="""
+        This endpoint retrieves a reply.
+    """
+)
+async def retrieve_reply(slug: str) -> ReplyResponseSchema:
+    reply = await get_reply_object(slug)
+    return {"message": "Reply Fetched", "data": reply}
