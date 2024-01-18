@@ -19,8 +19,8 @@ class PostSchema(BaseModel):
     author: UserDataSchema
     text: str
     slug: str = Field(..., example="john-doe-d10dde64-a242-4ed0-bd75-4c759644b3a6")
-    reactions_count: int
-    comments_count: int
+    reactions_count: int = 0
+    comments_count: int = 0
     get_image: Optional[str] = Field(
         ..., example="https://img.url", serialization_alias="image"
     )
@@ -49,8 +49,6 @@ class PostInputResponseDataSchema(PostSchema):
     get_image: Optional[Any] = Field(..., exclude=True, hidden=True)
     image_upload_id: Optional[Any] = Field(..., exclude=True, hidden=True)
     file_upload_data: Optional[Dict] = Field(None, example=file_upload_data)
-    reactions_count: int = Field(None, exclude=True, hidden=True)
-    comments_count: int = Field(None, exclude=True, hidden=True)
 
     @validator("file_upload_data", always=True)
     def assemble_file_upload_data(cls, v, values):
@@ -101,10 +99,10 @@ class ReplySchema(BaseModel):
     author: UserDataSchema
     slug: str
     text: str
-
+    reactions_count: int = 0
 
 class CommentSchema(ReplySchema):
-    replies_count: int
+    replies_count: int = 0
 
 
 class CommentWithRepliesResponseDataSchema(PaginatedResponseDataSchema):

@@ -148,7 +148,7 @@ async def delete_post(
 
 focus_query = Path(
     ...,
-    description="Specify the usage. Use any of the three: POST, COMMENT, FEED",
+    description="Specify the usage. Use any of the three: POST, COMMENT, REPLY",
 )
 slug_query = Path(..., description="Enter the slug of the post or comment or reply")
 
