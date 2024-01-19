@@ -244,31 +244,23 @@ class User(BaseModel, tablename="base_user"):
 
     async def save(self, *args, **kwargs):
         # Generate usename
-        self.username = await self.generate_username()
+        if not self._exists_in_db:
+            self.username = await self.generate_username()
         return await super().save(*args, **kwargs)
 
     async def generate_username(self):
-        name = self.full_name
         username = self.username
-        if name and (not username or not username.startswith(slugify(name))):
-            # The if statement above implies that username will only be created or altered
-            # if name exists and
-            # if username is none OR name has changed (checking if the current username tallies with the name)
-
-            unique_username = self.username or slugify(name)
-            obj = (
-                await User.objects()
-                .where(User.username == unique_username, User.id != self.id)
-                .first()
+        slugified_name = slugify(self.full_name)
+        unique_username = username or slugified_name
+        obj = await User.objects().where(User.username == unique_username).first()
+        if obj:  # username already taken
+            # Make it unique and re-run the function
+            unique_username = (
+                f"{unique_username}-{generate_random_alphanumeric_string()}"
             )
-            if obj:
-                unique_username = (
-                    f"{unique_username}-{generate_random_alphanumeric_string()}"
-                )
-                self.username = unique_username
-                return await self.generate_username()
-            return unique_username
-        return username
+            self.username = unique_username
+            return await self.generate_username()
+        return unique_username
 
     @property
     def full_name(self):

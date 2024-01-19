@@ -38,14 +38,7 @@ def generate_random_alphanumeric_string(length=6):
     return random_string
 
 
-async def generate_slug(cls, value, model_obj):
-    if value:
-        slug = slugify(value)
-        obj = (
-            await cls.objects().where(cls.slug == slug, cls.id != model_obj.id).first()
-        )
-        if obj:
-            slug = f"{slug}-{generate_random_alphanumeric_string()}"
-            return await generate_slug(cls, slug, model_obj)
-        return slug
-    return None
+def get_original_slug(slug, delimiter="-"):
+    parts = slug.split(delimiter)
+    original_string = parts[0]
+    return original_string

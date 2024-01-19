@@ -76,6 +76,8 @@ def validation_exception_handler(request, exc: RequestValidationError):
 
     modified_details = {}
     for error in details:
+        if error["type"] == "uuid_parsing":
+            error["msg"] = "Invalid UUID"
         try:
             field_name = error["loc"][1]
         except:

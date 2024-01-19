@@ -48,7 +48,9 @@ class Authentication:
         if not decoded:
             return None
         user = (
-            await User.objects(User.avatar)
+            await User.objects(
+                User.city, User.city.region, User.city.country, User.avatar
+            )
             .where(User.id == decoded["user_id"], User.access_token == token)
             .first()
         )

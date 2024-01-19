@@ -1,10 +1,19 @@
 import re
-from uuid import UUID
-from fastapi import APIRouter, Depends, Path, Request
+from fastapi import APIRouter, Depends
 from app.api.deps import get_current_user, get_current_user_or_guest
-from app.api.schemas.profiles import CitiesResponseSchema, ProfilesResponseSchema
+from app.api.schemas.profiles import (
+    CitiesResponseSchema,
+    ProfileResponseSchema,
+    ProfileUpdateResponseSchema,
+    ProfileUpdateSchema,
+    ProfilesResponseSchema,
+)
+from app.api.utils.file_processors import ALLOWED_IMAGE_TYPES
 from app.api.utils.paginators import Paginator
+from app.api.utils.utils import set_dict_attr
+from app.common.handlers import ErrorCode, RequestError
 from app.models.accounts.tables import City, User
+from app.models.base.tables import File
 
 router = APIRouter()
 paginator = Paginator()
@@ -54,3 +63,68 @@ async def retrieve_cities(name: str = None) -> CitiesResponseSchema:
     if len(cities) == 0:
         message = "No match found"
     return {"message": message, "data": cities}
+
+
+@router.get(
+    "/profile/{username}",
+    summary="Retrieve user's profile",
+    description="This endpoint retrieves a particular user profile",
+)
+async def retrieve_user_profile(username: str) -> ProfileResponseSchema:
+    user = await User.objects(User.avatar, User.city).get(User.username == username)
+    if not user:
+        raise RequestError(
+            err_code=ErrorCode.NON_EXISTENT,
+            err_msg="No user with that username",
+            status_code=404,
+        )
+    return {"message": "User details fetched", "data": user}
+
+
+@router.patch(
+    "/profile",
+    summary="Update user's profile",
+    description=f"""
+        This endpoint updates a particular user profile
+        ALLOWED FILE TYPES: {", ".join(ALLOWED_IMAGE_TYPES)}
+    """,
+)
+async def update_profile(
+    data: ProfileUpdateSchema, user: User = Depends(get_current_user)
+) -> ProfileUpdateResponseSchema:
+    data = data.model_dump(exclude_none=True)
+    # Validate City ID Entry
+    city_id = data.pop("city_id", None)
+    city = None
+    if city_id:
+        print("Halala")
+        city = await City.objects().get(City.id == city_id)
+        if not city:
+            raise RequestError(
+                err_code=ErrorCode.INVALID_ENTRY,
+                err_msg="Invalid Entry",
+                data={"city_id": "No city with that ID"},
+                status_code=422,
+            )
+        data["city"] = city_id
+
+    # Handle file upload
+    image_upload_id = False
+    file_type = data.pop("file_type", None)
+    if file_type:
+        # Create or update file object
+        avatar = user.avatar
+        if avatar:
+            avatar.resource_type = file_type
+            await avatar.save()
+        else:
+            avatar = await File.objects().create(resource_type=file_type)
+        image_upload_id = avatar.id
+        data["avatar"] = avatar
+
+    # Set attributes from data to user object
+    user = set_dict_attr(data, user)
+    user.image_upload_id = image_upload_id
+    await user.save()
+    user.city = city  # Set city to object instead of ID for response sake
+    return {"message": "User updated", "data": user}

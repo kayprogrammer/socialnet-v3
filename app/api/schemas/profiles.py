@@ -52,7 +52,7 @@ class ProfileUpdateSchema(BaseModel):
         min_length=1,
     )
     dob: Optional[date]
-    city_id: Optional[int]
+    city_id: Optional[UUID]
     file_type: Optional[str] = Field(None, example="image/jpeg")
 
     @validator("file_type")
@@ -78,13 +78,15 @@ class ProfileResponseSchema(ResponseSchema):
 
 class ProfileUpdateResponseDataSchema(ProfileSchema):
     get_avatar: Optional[Any] = Field(..., exclude=True, hidden=True)
+    image_upload_id: Optional[Any] = Field(..., exclude=True, hidden=True)
     file_upload_data: Optional[Dict] = Field(None, example=file_upload_data)
 
-    @staticmethod
-    def resolve_file_upload_data(obj):
-        if obj.image_upload_status:
+    @validator("file_upload_data", always=True)
+    def assemble_file_upload_data(cls, v, values):
+        image_upload_id = values.get("image_upload_id")
+        if image_upload_id:
             return FileProcessor.generate_file_signature(
-                key=obj.avatar_id,
+                key=image_upload_id,
                 folder="avatars",
             )
         return None
