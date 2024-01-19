@@ -1,8 +1,10 @@
 import re
 from fastapi import APIRouter, Depends
 from app.api.deps import get_current_user, get_current_user_or_guest
+from app.api.schemas.base import ResponseSchema
 from app.api.schemas.profiles import (
     CitiesResponseSchema,
+    DeleteUserSchema,
     ProfileResponseSchema,
     ProfileUpdateResponseSchema,
     ProfileUpdateSchema,
@@ -128,3 +130,25 @@ async def update_profile(
     await user.save()
     user.city = city  # Set city to object instead of ID for response sake
     return {"message": "User updated", "data": user}
+
+
+@router.post(
+    "/profile",
+    summary="Delete user's account",
+    description="This endpoint deletes a particular user's account (irreversible)",
+)
+async def delete_user(
+    data: DeleteUserSchema, user: User = Depends(get_current_user)
+) -> ResponseSchema:
+    # Check if password is valid
+    if not User.check_password(data.password, user.password):
+        raise RequestError(
+            err_code=ErrorCode.INVALID_CREDENTIALS,
+            err_msg="Invalid Entry",
+            status_code=422,
+            data={"password": "Incorrect password"},
+        )
+
+    # Delete user
+    await user.remove()
+    return {"message": "User deleted"}

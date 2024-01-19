@@ -209,9 +209,8 @@ class User(BaseModel, tablename="base_user"):
         if not user:
             return None
 
-        try:
-            cls._ph.verify(user.password, password)
-        except:
+        password_check = cls.check_password(password, user.password)
+        if not password_check:
             return None
 
         user.last_login = datetime.now()
@@ -219,6 +218,14 @@ class User(BaseModel, tablename="base_user"):
         return user
 
     ###########################################################################
+
+    @classmethod
+    def check_password(cls, entered_password, user_password):
+        try:
+            cls._ph.verify(user_password, entered_password)
+        except:
+            return None
+        return True
 
     @classmethod
     async def create_user(cls, email: str, password: str, **extra_params):
