@@ -21,7 +21,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version="3.0.0",
-    description="A simple Social Networking API built with FastAPI",
+    description="A simple Social Networking API built with FastAPI & Piccolo ORM",
     openapi_url=f"/openapi.json",
     docs_url="/",
     security=[{"BearerToken": []}],

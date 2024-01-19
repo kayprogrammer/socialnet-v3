@@ -101,6 +101,7 @@ class ReplySchema(BaseModel):
     text: str
     reactions_count: int = 0
 
+
 class CommentSchema(ReplySchema):
     replies_count: int = 0
 

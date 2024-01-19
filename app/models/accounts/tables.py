@@ -29,8 +29,32 @@ import random
 logger = logging.getLogger(__name__)
 
 
+class Country(BaseModel):
+    name = Varchar(length=100)
+    code = Varchar(length=100)
+
+
+class Region(BaseModel):
+    name = Varchar(length=100)
+    country = ForeignKey(references=Country, on_delete=OnDelete.cascade)
+
+
 class City(BaseModel):
     name = Varchar(length=100)
+    region = ForeignKey(references=Region, on_delete=OnDelete.cascade, null=True)
+    country = ForeignKey(references=Country, on_delete=OnDelete.cascade)
+
+    def __str__(self):
+        return self.name
+
+    @property
+    def region_name(self):
+        region = self.region
+        return region.name if region else None
+
+    @property
+    def country_name(self):
+        return self.country.name
 
 
 class User(BaseModel, tablename="base_user"):
@@ -265,6 +289,11 @@ class User(BaseModel, tablename="base_user"):
                 content_type=avatar.resource_type,
             )
         return None
+
+    @property
+    def city_name(self):
+        city = self.city
+        return city.name if city else None
 
 
 class Otp(BaseModel):

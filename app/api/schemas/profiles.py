@@ -15,10 +15,10 @@ from app.api.utils.utils import validate_image_type
 
 
 class CitySchema(BaseModel):
-    id: int
+    id: UUID
     name: str
-    region: str = Field(..., alias="region_name")
-    country: str = Field(..., alias="country_name")
+    region: str
+    country: str
 
 
 class CitiesResponseSchema(ResponseSchema):
@@ -30,12 +30,14 @@ class ProfileSchema(BaseModel):
     last_name: str = Field(..., example="Doe")
     username: str = Field(..., example="john-doe")
     email: EmailStr = Field(..., example="johndoe@email.com")
-    avatar: Optional[str] = Field(..., example="https://img.com", alias="get_avatar")
+    get_avatar: Optional[str] = Field(
+        ..., example="https://img.com", serialization_alias="avatar"
+    )
     bio: Optional[str] = Field(
         ..., example="Software Engineer | Django Ninja Developer"
     )
     dob: Optional[date]
-    city: Optional[str] = Field(None, example="Lagos", alias="city_name")
+    city_name: Optional[str] = Field(None, example="Lagos", serialization_alias="city")
     created_at: datetime
     updated_at: datetime
 
@@ -75,7 +77,7 @@ class ProfileResponseSchema(ResponseSchema):
 
 
 class ProfileUpdateResponseDataSchema(ProfileSchema):
-    avatar: Optional[Any] = Field(..., exclude=True, hidden=True)
+    get_avatar: Optional[Any] = Field(..., exclude=True, hidden=True)
     file_upload_data: Optional[Dict] = Field(None, example=file_upload_data)
 
     @staticmethod
