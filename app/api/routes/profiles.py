@@ -16,6 +16,7 @@ from app.api.utils.utils import set_dict_attr
 from app.common.handlers import ErrorCode, RequestError
 from app.models.accounts.tables import City, User
 from app.models.base.tables import File
+from app.models.profiles.tables import Friend
 
 router = APIRouter()
 paginator = Paginator()
@@ -152,3 +153,30 @@ async def delete_user(
     # Delete user
     await user.remove()
     return {"message": "User deleted"}
+
+
+# FRIENDS
+
+
+@router.get(
+    "/friends",
+    summary="Retrieve Friends",
+    description="This endpoint retrieves friends of a user",
+)
+async def retrieve_friends(
+    page: int = 1, user: User = Depends(get_current_user)
+) -> ProfilesResponseSchema:
+    friends = await Friend.objects().where(
+        Friend.status == "ACCEPTED",
+        (Friend.requester == user.id) | (Friend.requestee == user.id),
+    )
+    friend_ids = [
+        friend.requester if friend.requester != user.id else friend.requestee
+        for friend in friends
+    ]
+    friends = User.objects(User.avatar, User.city).where(User.id.is_in(friend_ids))
+
+    # Return paginated data
+    paginator.page_size = 20
+    paginated_data = await paginator.paginate_queryset(friends, page)
+    return {"message": "Friends fetched", "data": paginated_data}
