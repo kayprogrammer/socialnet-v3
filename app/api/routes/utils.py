@@ -114,6 +114,6 @@ async def get_requestee_and_friend_obj(user, username, status=None):
         | ((Friend.requester == requestee.id) & (Friend.requestee == user.id))
     )
     if status:
-        friend = friend.where(status=status)
+        friend = friend.where(Friend.status == status)
     friend = await friend.first()
     return requestee, friend

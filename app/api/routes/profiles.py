@@ -4,6 +4,7 @@ from app.api.deps import get_current_user, get_current_user_or_guest
 from app.api.routes.utils import get_requestee_and_friend_obj
 from app.api.schemas.base import ResponseSchema
 from app.api.schemas.profiles import (
+    AcceptFriendRequestSchema,
     CitiesResponseSchema,
     DeleteUserSchema,
     ProfileResponseSchema,
@@ -239,3 +240,42 @@ async def send_or_delete_friend_request(
         await Friend.objects().create(requester=user.id, requestee=requestee.id)
 
     return {"message": message, "status_code": status_code}
+
+
+@router.put(
+    "/friends/requests",
+    summary="Accept Or Reject a Friend Request",
+    description="""
+        This endpoint accepts or reject a friend request
+        accepted choices:
+        - If true, then it was accepted
+        - If false, then it was rejected
+    """,
+)
+async def accept_or_reject_friend_request(
+    data: AcceptFriendRequestSchema, user: User = Depends(get_current_user)
+) -> ResponseSchema:
+    _, friend = await get_requestee_and_friend_obj(user, data.username, "PENDING")
+    if not friend:
+        raise RequestError(
+            err_code=ErrorCode.NON_EXISTENT,
+            err_msg="No pending friend request exist between you and that user",
+            status_code=401,
+        )
+    if friend.requester == user.id:
+        raise RequestError(
+            err_code=ErrorCode.NOT_ALLOWED,
+            err_msg="You cannot accept or reject a friend request you sent ",
+            status_code=403,
+        )
+
+    # Update or delete friend request based on status
+    accepted = data.accepted
+    if accepted:
+        msg = "Accepted"
+        friend.status = "ACCEPTED"
+        await friend.save()
+    else:
+        msg = "Rejected"
+        await friend.remove()
+    return {"message": f"Friend Request {msg}"}
