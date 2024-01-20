@@ -227,10 +227,10 @@ async def create_reaction(
             Notification.sender == user.id,
             Notification.ntype == "REACTION",
             getattr(Notification, obj_field) == obj.id,
+            defaults={Notification.receiver_ids: [obj.author]},
         )
-        if notification._was_created:
-            await notification.add_m2m(User(id=obj.author), m2m=Notification.receivers)
 
+        if notification._was_created:
             # Send to websocket
             await send_notification_in_socket(
                 is_secured(request),
@@ -330,10 +330,11 @@ async def create_comment(
     # Create and Send Notification
     if user.id != post.author:
         notification = await Notification.objects().create(
-            sender=user.id, ntype="COMMENT", comment=comment.id
+            sender=user.id,
+            ntype="COMMENT",
+            comment=comment.id,
+            receivers_id=[post.author],
         )
-        await notification.add_m2m(User(id=post.author), m2m=Notification.receivers)
-
         # Send to websocket
         await send_notification_in_socket(
             is_secured(request), request.headers["host"], notification
@@ -380,9 +381,8 @@ async def create_reply(
     # Create and Send Notification
     if user.id != comment.author.id:
         notification = await Notification.objects().create(
-            sender=user.id, ntype="REPLY", reply=reply.id
+            sender=user.id, ntype="REPLY", reply=reply.id, receivers_id=[comment.author]
         )
-        await notification.add_m2m(User(id=comment.author), m2m=Notification.receivers)
 
         # Send to websocket
         await send_notification_in_socket(
