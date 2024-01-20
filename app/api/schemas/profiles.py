@@ -112,7 +112,7 @@ class NotificationSchema(BaseModel):
     post_slug: Optional[str]
     comment_slug: Optional[str]
     reply_slug: Optional[str]
-    is_read: bool = False
+    is_read: bool
 
 
 class ReadNotificationSchema(BaseModel):

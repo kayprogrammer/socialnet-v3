@@ -1,12 +1,16 @@
 import re
 from fastapi import APIRouter, Depends
 from app.api.deps import get_current_user, get_current_user_or_guest
-from app.api.routes.utils import get_requestee_and_friend_obj
+from app.api.routes.utils import (
+    get_notifications_queryset,
+    get_requestee_and_friend_obj,
+)
 from app.api.schemas.base import ResponseSchema
 from app.api.schemas.profiles import (
     AcceptFriendRequestSchema,
     CitiesResponseSchema,
     DeleteUserSchema,
+    NotificationsResponseSchema,
     ProfileResponseSchema,
     ProfileUpdateResponseSchema,
     ProfileUpdateSchema,
@@ -279,3 +283,32 @@ async def accept_or_reject_friend_request(
         msg = "Rejected"
         await friend.remove()
     return {"message": f"Friend Request {msg}"}
+
+
+@router.get(
+    "/notifications",
+    summary="Retrieve Auth User Notifications",
+    description="""
+        This endpoint retrieves a paginated list of auth user's notifications
+        Note:
+            - Use post slug to navigate to the post.
+            - Use comment slug to navigate to the comment.
+            - Use reply slug to navigate to the reply.
+
+        WEBSOCKET ENDPOINT: /api/v2/ws/notifications/ e.g (ws://{host}/api/v2/ws/notifications/) 
+            NOTE:
+            * This endpoint requires authorization, so pass in the Authorization header with Bearer and its value.
+            * You can only read and not send notification messages into this socket.
+    """,
+)
+async def retrieve_user_notifications(
+    page: int = 1, user: User = Depends(get_current_user)
+) -> NotificationsResponseSchema:
+    notifications = get_notifications_queryset(user)
+
+    # Return paginated data and set is_read to every item
+    paginated_data = await paginator.paginate_queryset(notifications, page)
+    items = paginated_data["items"]
+    for item in items:
+        item.is_read = True if user.id in item.read_by_ids else False
+    return {"message": "Notifications fetched", "data": paginated_data}

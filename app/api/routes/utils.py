@@ -5,7 +5,7 @@ from app.common.handlers import ErrorCode, RequestError
 from app.models.accounts.tables import User
 
 from app.models.feed.tables import Comment, Post, Reply, Reaction
-from app.models.profiles.tables import Friend
+from app.models.profiles.tables import Friend, Notification
 
 
 async def get_post_object(slug, object_type: Literal["simple", "detailed"] = "simple"):
@@ -117,3 +117,20 @@ async def get_requestee_and_friend_obj(user, username, status=None):
         friend = friend.where(Friend.status == status)
     friend = await friend.first()
     return requestee, friend
+
+
+def get_notifications_queryset(current_user):
+    current_user_id = current_user.id
+    # Fetch current user notifications and set and post_slug, comment_slug is_read attribute for each notifications
+    notifications = (
+        Notification.objects(
+            Notification.sender,
+            Notification.sender.avatar,
+            Notification.post,
+            Notification.comment,
+            Notification.reply,
+        )
+        .where(Notification.receiver_ids.any(current_user_id))
+        .order_by(Notification.created_at, ascending=False)
+    )
+    return notifications

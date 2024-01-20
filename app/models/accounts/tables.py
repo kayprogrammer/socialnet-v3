@@ -92,12 +92,6 @@ class User(BaseModel, tablename="base_user"):
     bio = Varchar(length=200, null=True)
     city = ForeignKey(references=City, on_delete=OnDelete.set_null, null=True)
     dob = Date(null=True)
-    notifications = M2M(
-        LazyTableReference("NotificationToUserReceiver", module_path=__name__)
-    )
-    notifications_read = M2M(
-        LazyTableReference("NotificationToUserRead", module_path=__name__)
-    )
 
     _min_password_length = 6
     _max_password_length = 24
@@ -293,6 +287,14 @@ class User(BaseModel, tablename="base_user"):
     def city_name(self):
         city = self.city
         return city.name if city else None
+
+    @property
+    def notifications(self):
+        pass
+
+    @property
+    def notifications_read(self):
+        pass
 
 
 class Otp(BaseModel):

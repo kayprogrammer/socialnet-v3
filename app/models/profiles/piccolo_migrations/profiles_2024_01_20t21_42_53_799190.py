@@ -2,6 +2,7 @@ from piccolo.apps.migrations.auto.migration_manager import MigrationManager
 from enum import Enum
 from piccolo.columns.base import OnDelete
 from piccolo.columns.base import OnUpdate
+from piccolo.columns.column_types import Array
 from piccolo.columns.column_types import ForeignKey
 from piccolo.columns.column_types import Timestamptz
 from piccolo.columns.column_types import UUID
@@ -68,7 +69,7 @@ class User(Table, tablename="base_user", schema=None):
     )
 
 
-ID = "2024-01-12T18:13:09:624617"
+ID = "2024-01-20T21:42:53:799190"
 VERSION = "1.2.0"
 DESCRIPTION = ""
 
@@ -315,6 +316,38 @@ async def forwards():
     manager.add_column(
         table_class_name="Notification",
         tablename="notification",
+        column_name="receiver_ids",
+        db_column_name="receiver_ids",
+        column_class_name="Array",
+        column_class=Array,
+        params={
+            "base_column": UUID(
+                default=UUID4(),
+                null=False,
+                primary_key=False,
+                unique=False,
+                index=False,
+                index_method=IndexMethod.btree,
+                choices=None,
+                db_column_name=None,
+                secret=False,
+            ),
+            "default": list,
+            "null": False,
+            "primary_key": False,
+            "unique": False,
+            "index": False,
+            "index_method": IndexMethod.btree,
+            "choices": None,
+            "db_column_name": None,
+            "secret": False,
+        },
+        schema=None,
+    )
+
+    manager.add_column(
+        table_class_name="Notification",
+        tablename="notification",
         column_name="ntype",
         db_column_name="ntype",
         column_class_name="Varchar",
@@ -425,6 +458,38 @@ async def forwards():
             "length": 100,
             "default": "",
             "null": True,
+            "primary_key": False,
+            "unique": False,
+            "index": False,
+            "index_method": IndexMethod.btree,
+            "choices": None,
+            "db_column_name": None,
+            "secret": False,
+        },
+        schema=None,
+    )
+
+    manager.add_column(
+        table_class_name="Notification",
+        tablename="notification",
+        column_name="read_by_ids",
+        db_column_name="read_by_ids",
+        column_class_name="Array",
+        column_class=Array,
+        params={
+            "base_column": UUID(
+                default=UUID4(),
+                null=False,
+                primary_key=False,
+                unique=False,
+                index=False,
+                index_method=IndexMethod.btree,
+                choices=None,
+                db_column_name=None,
+                secret=False,
+            ),
+            "default": list,
+            "null": False,
             "primary_key": False,
             "unique": False,
             "index": False,
