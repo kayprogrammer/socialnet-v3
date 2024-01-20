@@ -15,6 +15,7 @@ from app.api.schemas.profiles import (
     ProfileUpdateResponseSchema,
     ProfileUpdateSchema,
     ProfilesResponseSchema,
+    ReadNotificationSchema,
     SendFriendRequestSchema,
 )
 from app.api.utils.file_processors import ALLOWED_IMAGE_TYPES
@@ -23,7 +24,7 @@ from app.api.utils.utils import set_dict_attr
 from app.common.handlers import ErrorCode, RequestError
 from app.models.accounts.tables import City, User
 from app.models.base.tables import File
-from app.models.profiles.tables import Friend
+from app.models.profiles.tables import Friend, Notification
 
 router = APIRouter()
 paginator = Paginator()
@@ -312,3 +313,51 @@ async def retrieve_user_notifications(
     for item in items:
         item.is_read = True if user.id in item.read_by_ids else False
     return {"message": "Notifications fetched", "data": paginated_data}
+
+
+@router.post(
+    "/notifications",
+    summary="Read Notification",
+    description="""
+        This endpoint reads a notification
+    """,
+)
+async def read_notification(
+    data: ReadNotificationSchema, user: User = Depends(get_current_user)
+) -> ResponseSchema:
+    id = data.id
+    mark_all_as_read = data.mark_all_as_read
+
+    resp_message = "Notifications read"
+    if mark_all_as_read:
+        notifications = await Notification.select(
+            Notification.id, Notification.read_by_ids
+        ).where(Notification.receiver_ids.any(user.id))
+        notification_ids_to_update = [
+            notification["id"]
+            for notification in notifications
+            if not user.id in notification["read_by_ids"]
+        ]
+        # Mark all notifications as read
+        if len(notification_ids_to_update) > 0:
+            await Notification.update(
+                {Notification.read_by_ids: Notification.read_by_ids + user.id}
+            ).where(Notification.id.is_in(notification_ids_to_update))
+    elif id:
+        # Mark single notification as read
+        notification = (
+            await Notification.objects()
+            .where(Notification.receiver_ids.any(user.id), Notification.id == id)
+            .first()
+        )
+        if not notification:
+            raise RequestError(
+                err_code=ErrorCode.NON_EXISTENT,
+                err_msg="User has no notification with that ID",
+                status_code=404,
+            )
+        if not user.id in notification.read_by_ids:
+            notification.read_by_ids.append(user.id)
+            await notification.save()
+        resp_message = "Notification read"
+    return {"message": resp_message}

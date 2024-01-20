@@ -117,7 +117,7 @@ class NotificationSchema(BaseModel):
 
 class ReadNotificationSchema(BaseModel):
     mark_all_as_read: bool
-    id: Optional[UUID]
+    id: Optional[UUID] = None
 
     @validator("id", always=True)
     def validate_id(cls, v, values):
