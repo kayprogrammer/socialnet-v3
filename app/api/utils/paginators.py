@@ -13,7 +13,9 @@ class Paginator(object):
             )
         page_size = self.page_size
         # Doing limit and offset would probably be the best way for this, but this ORM left me no choice.
-        qs = await queryset.limit(1000000)
+        qs = []
+        if queryset != qs:
+            qs = await queryset.limit(1000000)
         items = qs[(current_page - 1) * page_size : current_page * page_size]
         qs_count = len(qs)
 

@@ -174,7 +174,9 @@ async def retrieve_friends(
         friend.requester if friend.requester != user.id else friend.requestee
         for friend in friends
     ]
-    friends = User.objects(User.avatar, User.city).where(User.id.is_in(friend_ids))
+    friends = []
+    if len(friend_ids) > 0:
+        friends = User.objects(User.avatar, User.city).where(User.id.is_in(friend_ids))
 
     # Return paginated data
     paginator.page_size = 20
