@@ -1,6 +1,7 @@
 import re
 from fastapi import APIRouter, Depends
 from app.api.deps import get_current_user, get_current_user_or_guest
+from app.api.routes.utils import get_requestee_and_friend_obj
 from app.api.schemas.base import ResponseSchema
 from app.api.schemas.profiles import (
     CitiesResponseSchema,
@@ -9,6 +10,7 @@ from app.api.schemas.profiles import (
     ProfileUpdateResponseSchema,
     ProfileUpdateSchema,
     ProfilesResponseSchema,
+    SendFriendRequestSchema,
 )
 from app.api.utils.file_processors import ALLOWED_IMAGE_TYPES
 from app.api.utils.paginators import Paginator
@@ -166,12 +168,12 @@ async def delete_user(
 async def retrieve_friends(
     page: int = 1, user: User = Depends(get_current_user)
 ) -> ProfilesResponseSchema:
-    friends = await Friend.objects().where(
+    friends = await Friend.select(Friend.requester, Friend.requestee).where(
         Friend.status == "ACCEPTED",
         (Friend.requester == user.id) | (Friend.requestee == user.id),
     )
     friend_ids = [
-        friend.requester if friend.requester != user.id else friend.requestee
+        friend["requester"] if friend["requester"] != user.id else friend["requestee"]
         for friend in friends
     ]
     friends = []
@@ -182,3 +184,58 @@ async def retrieve_friends(
     paginator.page_size = 20
     paginated_data = await paginator.paginate_queryset(friends, page)
     return {"message": "Friends fetched", "data": paginated_data}
+
+
+@router.get(
+    "/friends/requests",
+    summary="Retrieve Friend Requests",
+    description="This endpoint retrieves friend requests of a user",
+)
+async def retrieve_friend_requests(
+    page: int = 1, user: User = Depends(get_current_user)
+) -> ProfilesResponseSchema:
+    pending_friends = await Friend.select(Friend.requester).where(
+        Friend.requestee == user.id, Friend.status == "PENDING"
+    )
+    pending_friend_ids = [friend["requester"] for friend in pending_friends]
+    friends = []
+    if len(pending_friend_ids) > 0:
+        friends = User.objects(User.avatar, User.city).where(
+            User.id.is_in(pending_friend_ids)
+        )
+
+    # Return paginated data
+    paginator.page_size = 20
+    paginated_data = await paginator.paginate_queryset(friends, page)
+    return {"message": "Friend Requests fetched", "data": paginated_data}
+
+
+@router.post(
+    "/friends/requests",
+    summary="Send Or Delete Friend Request",
+    description="This endpoint sends or delete friend requests",
+    responses={201: {"model": ResponseSchema}, 200: {"model": ResponseSchema}},
+)
+async def send_or_delete_friend_request(
+    data: SendFriendRequestSchema, user: User = Depends(get_current_user)
+) -> ResponseSchema:
+    requestee, friend = await get_requestee_and_friend_obj(user, data.username)
+    message = "Friend Request sent"
+    status_code = 201
+    if friend:
+        status_code = 200
+        message = "Friend Request removed"
+        if user.id != friend.requester:
+            raise RequestError(
+                err_code=ErrorCode.NOT_ALLOWED,
+                err_msg="The user already sent you a friend request!",
+                status_code=403,
+            )
+        if friend.status == "ACCEPTED":
+            message = "This user is already your friend"
+        else:
+            await friend.remove()
+    else:
+        await Friend.objects().create(requester=user.id, requestee=requestee.id)
+
+    return {"message": message, "status_code": status_code}

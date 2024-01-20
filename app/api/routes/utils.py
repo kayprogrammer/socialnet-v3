@@ -2,8 +2,10 @@ from typing import Literal
 
 from fastapi import Request
 from app.common.handlers import ErrorCode, RequestError
+from app.models.accounts.tables import User
 
 from app.models.feed.tables import Comment, Post, Reply, Reaction
+from app.models.profiles.tables import Friend
 
 
 async def get_post_object(slug, object_type: Literal["simple", "detailed"] = "simple"):
@@ -95,3 +97,23 @@ async def get_reply_object(slug):
 
 def is_secured(request: Request) -> bool:
     return request.scope["scheme"].endswith("s")  # if request is secured
+
+
+async def get_requestee_and_friend_obj(user, username, status=None):
+    # Get and validate username existence
+    requestee = await User.objects().get(User.username == username)
+    if not requestee:
+        raise RequestError(
+            err_code=ErrorCode.NON_EXISTENT,
+            err_msg="User does not exist!",
+            status_code=404,
+        )
+
+    friend = Friend.objects().where(
+        ((Friend.requester == user.id) & (Friend.requestee == requestee.id))
+        | ((Friend.requester == requestee.id) & (Friend.requestee == user.id))
+    )
+    if status:
+        friend = friend.where(status=status)
+    friend = await friend.first()
+    return requestee, friend
