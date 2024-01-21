@@ -231,14 +231,14 @@ async def send_or_delete_friend_request(
     if friend:
         status_code = 200
         message = "Friend Request removed"
-        if user.id != friend.requester:
+        if friend.status == "ACCEPTED":
+            message = "This user is already your friend"
+        elif user.id != friend.requester:
             raise RequestError(
                 err_code=ErrorCode.NOT_ALLOWED,
                 err_msg="The user already sent you a friend request!",
                 status_code=403,
             )
-        if friend.status == "ACCEPTED":
-            message = "This user is already your friend"
         else:
             await friend.remove()
     else:

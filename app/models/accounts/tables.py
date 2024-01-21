@@ -15,7 +15,6 @@ from piccolo.columns import (
     Date,
     Secret,
     BigInt,
-    LazyTableReference,
 )
 from piccolo.utils.sync import run_sync
 from piccolo.columns.readable import Readable
