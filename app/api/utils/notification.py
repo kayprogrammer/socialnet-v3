@@ -7,16 +7,17 @@ from app.api.schemas.profiles import NotificationSchema
 def get_notification_message(obj):
     """This function returns a notification message"""
     ntype = obj.ntype
-    message = f"{obj.sender.full_name} reacted to your post"
+    sender = obj.sender.full_name
+    message = f"{sender} reacted to your post"
     if ntype == "REACTION":
         if obj.comment.id:
-            message = f"{obj.sender.full_name} reacted to your comment"
+            message = f"{sender} reacted to your comment"
         elif obj.reply.id:
-            message = f"{obj.sender.full_name} reacted to your reply"
+            message = f"{sender} reacted to your reply"
     elif ntype == "COMMENT":
-        message = f"{obj.sender.full_name} commented on your post"
+        message = f"{sender} commented on your post"
     elif ntype == "REPLY":
-        message = f"{obj.sender.full_name} replied your comment"
+        message = f"{sender} replied your comment"
     return message
 
 

@@ -264,8 +264,8 @@ async def accept_or_reject_friend_request(
     if not friend:
         raise RequestError(
             err_code=ErrorCode.NON_EXISTENT,
-            err_msg="No pending friend request exist between you and that user",
-            status_code=401,
+            err_msg="No friend request exist between you and that user",
+            status_code=404,
         )
     if friend.requester == user.id:
         raise RequestError(
@@ -296,7 +296,7 @@ async def accept_or_reject_friend_request(
             - Use comment slug to navigate to the comment.
             - Use reply slug to navigate to the reply.
 
-        WEBSOCKET ENDPOINT: /api/v2/ws/notifications/ e.g (ws://{host}/api/v2/ws/notifications/) 
+        WEBSOCKET ENDPOINT: /api/v4/ws/notifications/ e.g (ws://{host}/api/v4/ws/notifications/) 
             NOTE:
             * This endpoint requires authorization, so pass in the Authorization header with Bearer and its value.
             * You can only read and not send notification messages into this socket.

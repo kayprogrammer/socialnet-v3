@@ -121,7 +121,7 @@ async def get_requestee_and_friend_obj(user, username, status=None):
 
 def get_notifications_queryset(current_user):
     current_user_id = current_user.id
-    # Fetch current user notifications and set and post_slug, comment_slug is_read attribute for each notifications
+    # Fetch current user notifications
     notifications = (
         Notification.objects(
             Notification.sender,

@@ -26,7 +26,7 @@ mmig: ## Run migrations. Use "make mmig app='app'" or "make mmig app='app' messa
 mig:
 	piccolo migrations forwards all
 
-initial_data:
+init:
 	python initials/initial_data.py
 
 tests:
