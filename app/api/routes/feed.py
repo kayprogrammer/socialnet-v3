@@ -340,8 +340,10 @@ async def create_comment(
             sender=user.id,
             ntype="COMMENT",
             comment=comment.id,
-            receivers_id=[post.author],
+            receiver_ids=[post.author],
         )
+        notification.sender = user
+        notification.comment = comment
         # Send to websocket
         await send_notification_in_socket(
             is_secured(request), request.headers["host"], notification
@@ -388,9 +390,13 @@ async def create_reply(
     # Create and Send Notification
     if user.id != comment.author.id:
         notification = await Notification.objects().create(
-            sender=user.id, ntype="REPLY", reply=reply.id, receivers_id=[comment.author]
+            sender=user.id,
+            ntype="REPLY",
+            reply=reply.id,
+            receiver_ids=[comment.author.id],
         )
-
+        notification.sender = user
+        notification.reply = reply
         # Send to websocket
         await send_notification_in_socket(
             is_secured(request), request.headers["host"], notification
@@ -454,7 +460,7 @@ async def delete_comment(
             is_secured(request), request.headers["host"], notification, status="DELETED"
         )
 
-    await comment.remove()  # deletes notification alongside
+    await comment.remove()  # deletes notification alongside (CASCADE)
     return {"message": "Comment Deleted"}
 
 
@@ -526,5 +532,5 @@ async def delete_reply(
             is_secured(request), request.headers["host"], notification, status="DELETED"
         )
 
-    await reply.remove()  # deletes notification alongside
+    await reply.remove()  # deletes notification alongside (CASCADE)
     return {"message": "Reply Deleted"}
