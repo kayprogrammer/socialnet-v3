@@ -35,7 +35,7 @@ async def send_notification_in_socket(
     if status == "CREATED":
         notification_data = notification_data | NotificationSchema.model_validate(
             notification
-        ).model_dump(exclude={"id", "ntype"})
+        ).model_dump(exclude={"id", "ntype"}, by_alias=True)
     headers = [
         ("Authorization", settings.SOCKET_SECRET),
     ]
