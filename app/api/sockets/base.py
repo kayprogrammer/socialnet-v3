@@ -9,9 +9,10 @@ class BaseSocketConnectionManager:
     async def connect(self, websocket: WebSocket):
         self.active_connections.append(websocket)
 
-    async def disconnect(self, websocket: WebSocket):
+    async def disconnect(self, websocket: WebSocket, self_disconnection=False):
         self.active_connections.remove(websocket)
-        await websocket.close()
+        if not self_disconnection:
+            await websocket.close()
 
     async def receive_data(self, websocket: WebSocket):
         data = None

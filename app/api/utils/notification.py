@@ -21,32 +21,18 @@ def get_notification_message(obj):
     return message
 
 
-async def sort_notification_slugs(notification):
-    if notification.post.id:
-        notification.post_slug = notification.post.slug
-    elif notification.comment.id:
-        notification.comment_slug = notification.comment.slug
-        notification.post_slug = notification.comment.post.slug
-    elif notification.reply.id:
-        notification.reply_slug = notification.reply.slug
-        notification.comment_slug = notification.reply.comment.slug
-        notification.post_slug = notification.reply.comment.post.slug
-    return notification
-
-
 # Send notification in websocket
 async def send_notification_in_socket(
     secured: bool, host: str, notification: object, status: str = "CREATED"
 ):
     websocket_scheme = "wss://" if secured else "ws://"
-    uri = f"{websocket_scheme}{host}/api/v3/ws/notifications/"
+    uri = f"{websocket_scheme}{host}/api/v3/ws/notifications"
     notification_data = {
         "id": str(notification.id),
         "status": status,
         "ntype": notification.ntype,
     }
     if status == "CREATED":
-        notification = await sort_notification_slugs(notification)
         notification_data = notification_data | NotificationSchema.model_validate(
             notification
         ).model_dump(exclude={"id", "ntype"})

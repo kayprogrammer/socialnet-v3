@@ -67,4 +67,4 @@ async def websocket_endpoint(
                 )
                 break
     except WebSocketDisconnect:
-        await manager.disconnect(websocket)
+        await manager.disconnect(websocket, True)

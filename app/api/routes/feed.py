@@ -214,23 +214,30 @@ async def create_reaction(
     if (
         obj.author.id != user.id
     ):  # Send notification only when it's not the user reacting to his data
-        notification = await Notification.objects(
-            Notification.sender,
-            Notification.sender.avatar,
-            Notification.post,
-            Notification.comment,
-            Notification.comment.post,
-            Notification.reply,
-            Notification.reply.comment,
-            Notification.reply.comment.post,
-        ).get_or_create(
-            Notification.sender == user.id,
-            Notification.ntype == "REACTION",
-            getattr(Notification, obj_field) == obj.id,
-            defaults={Notification.receiver_ids: [obj.author]},
+        notification = (
+            await Notification.objects(
+                Notification.sender,
+                Notification.sender.avatar,
+                Notification.post,
+                Notification.comment,
+                Notification.comment.post,
+                Notification.reply,
+                Notification.reply.comment,
+                Notification.reply.comment.post,
+            )
+            .where(Notification.ntype == "REACTION", Notification.sender == user.id)
+            .get_or_create(
+                getattr(Notification, obj_field) == obj.id,
+                defaults={
+                    Notification.ntype: "REACTION",
+                    Notification.sender: user.id,
+                    Notification.receiver_ids: [obj.author.id],
+                },
+            )
         )
 
         if notification._was_created:
+            notification.sender = user
             # Send to websocket
             await send_notification_in_socket(
                 is_secured(request),
@@ -446,9 +453,8 @@ async def delete_comment(
         await send_notification_in_socket(
             is_secured(request), request.headers["host"], notification, status="DELETED"
         )
-        await notification.remove()
 
-    await comment.remove()
+    await comment.remove()  # deletes notification alongside
     return {"message": "Comment Deleted"}
 
 
@@ -519,7 +525,6 @@ async def delete_reply(
         await send_notification_in_socket(
             is_secured(request), request.headers["host"], notification, status="DELETED"
         )
-        await notification.remove()
 
-    await reply.remove()
+    await reply.remove()  # deletes notification alongside
     return {"message": "Reply Deleted"}
