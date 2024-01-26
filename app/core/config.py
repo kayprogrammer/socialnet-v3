@@ -19,6 +19,7 @@ class Settings(BaseSettings):
 
     # SECURITY
     SECRET_KEY: str
+    SOCKET_SECRET: str
 
     # PROJECT DETAILS
     PROJECT_NAME: str

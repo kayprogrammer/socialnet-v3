@@ -4,6 +4,7 @@ from piccolo.engine import engine_finder
 from starlette.middleware.cors import CORSMiddleware
 
 from app.api.routers import main_router
+from app.api.sockets.notification import notification_socket_router
 from app.common.handlers import exc_handlers
 from app.core.config import settings
 
@@ -48,6 +49,7 @@ app.add_middleware(
 )
 
 app.include_router(main_router, prefix="/api/v3")
+app.add_websocket_route("/api/v3/ws/notifications", notification_socket_router)
 
 
 @app.get("/api/v3/healthcheck", name="Healthcheck", tags=["Healthcheck"])
