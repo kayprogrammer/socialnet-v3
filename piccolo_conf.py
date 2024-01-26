@@ -21,5 +21,6 @@ APP_REGISTRY = AppRegistry(
         "app.models.accounts.piccolo_app",
         "app.models.feed.piccolo_app",
         "app.models.profiles.piccolo_app",
+        "app.models.chat.piccolo_app",
     ]
 )

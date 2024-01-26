@@ -3,7 +3,6 @@ from app.api.utils.notification import get_notification_message
 from app.models.accounts.tables import User
 from app.models.base.tables import BaseModel
 from piccolo.columns import Varchar, ForeignKey, OnDelete, Array, UUID
-from piccolo.columns.m2m import M2M
 
 from app.models.feed.tables import Comment, Post, Reply
 
