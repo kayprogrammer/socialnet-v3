@@ -3,6 +3,7 @@ from typing import Literal
 from fastapi import Request
 from app.common.handlers import ErrorCode, RequestError
 from app.models.accounts.tables import User
+from app.models.base.tables import File
 from app.models.chat.tables import Message
 
 from app.models.feed.tables import Comment, Post, Reply, Reaction
@@ -148,3 +149,11 @@ async def set_chat_latest_messages(chats):
     for chat in chats:
         chat._latest_message_obj = latest_messages_dict.get(chat.id)
     return chats
+
+
+# Create file object
+async def create_file(file_type=None):
+    file = None
+    if file_type:
+        file = await File.objects().create(resource_type=file_type)
+    return file

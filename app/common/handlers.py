@@ -76,14 +76,18 @@ def validation_exception_handler(request, exc: RequestValidationError):
 
     modified_details = {}
     for error in details:
+        # Modify messages
+        err_msg = error["msg"]
+        if err_msg.startswith("Value error,"):
+            err_msg = err_msg[13:]
         if error["type"] == "uuid_parsing":
-            error["msg"] = "Invalid UUID"
+            err_msg = "Invalid UUID"
         try:
             field_name = error["loc"][1]
         except:
             field_name = error["loc"][0]
 
-        modified_details[f"{field_name}"] = error["msg"]
+        modified_details[f"{field_name}"] = err_msg
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         content={

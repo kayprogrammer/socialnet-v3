@@ -69,7 +69,7 @@ class Message(BaseModel):
             Chat.update({Chat.latest_message_id: self.id}).where(
                 Chat.id == self.chat
             ).run_sync()
-        super().save(*args, **kwargs)
+        return super().save(*args, **kwargs)
 
     @property
     def get_file(self):
