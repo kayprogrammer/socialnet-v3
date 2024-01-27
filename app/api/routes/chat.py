@@ -3,10 +3,12 @@ from fastapi import APIRouter, Depends, Path, Request
 from app.api.deps import get_current_user
 from app.api.routes.utils import (
     create_file,
+    get_chat_object,
     is_secured,
     set_chat_latest_messages,
 )
 from app.api.schemas.chat import (
+    ChatResponseSchema,
     ChatsResponseSchema,
     MessageCreateResponseSchema,
     MessageCreateSchema,
@@ -127,3 +129,21 @@ async def send_message(
     message.sender = user
     message.file_upload_id = file_upload_id
     return {"message": "Message sent", "data": message}
+
+@router.get(
+    "/{chat_id}",
+    summary="Retrieve messages from a Chat",
+    description="""
+        This endpoint retrieves all messages in a chat.
+    """,
+)
+async def retrieve_messages(chat_id: UUID, page: int = 1, user: User = Depends(get_current_user)) -> ChatResponseSchema:
+    chat = await get_chat_object(user, chat_id)
+    paginator.page_size = 400
+    paginated_data = await paginator.paginate_queryset(chat.messages, page)
+    # Set latest message obj
+    messages = paginated_data["items"]
+    chat._latest_message_obj = messages[0] if len(messages) > 0 else None
+    
+    data = {"chat": chat, "messages": paginated_data, "users": chat.recipients}
+    return {"message": "Messages fetched", "data": data}

@@ -4,7 +4,7 @@ from fastapi import Request
 from app.common.handlers import ErrorCode, RequestError
 from app.models.accounts.tables import User
 from app.models.base.tables import File
-from app.models.chat.tables import Message
+from app.models.chat.tables import Chat, Message
 
 from app.models.feed.tables import Comment, Post, Reply, Reaction
 from app.models.profiles.tables import Friend, Notification
@@ -157,3 +157,18 @@ async def create_file(file_type=None):
     if file_type:
         file = await File.objects().create(resource_type=file_type)
     return file
+
+
+async def get_chat_object(user, chat_id):
+    chat = await Chat.objects(Chat.owner, Chat.owner.avatar, Chat.image).where((Chat.owner == user.id) | (Chat.user_ids.any(user.id))).get(Chat.id == chat_id)
+    if not chat:
+        raise RequestError(
+            err_code=ErrorCode.NON_EXISTENT,
+            err_msg="User has no chat with that ID",
+            status_code=404,
+        )
+    messages = Message.objects(Message.sender, Message.sender.avatar, Message.file).where(Message.chat == chat_id).order_by(Message.created_at, ascending=False)
+    users = await User.objects(User.avatar).where(User.id.is_in(chat.user_ids))
+    chat.messages = messages
+    chat.recipients = users
+    return chat

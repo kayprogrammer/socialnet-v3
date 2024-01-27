@@ -102,3 +102,6 @@ class MessageCreateResponseDataSchema(MessageSchema):
 
 class MessageCreateResponseSchema(ResponseSchema):
     data: MessageCreateResponseDataSchema
+
+class ChatResponseSchema(ResponseSchema):
+    data: MessagesSchema
