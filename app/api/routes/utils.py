@@ -3,6 +3,7 @@ from typing import Literal
 from fastapi import Request
 from app.common.handlers import ErrorCode, RequestError
 from app.models.accounts.tables import User
+from app.models.chat.tables import Message
 
 from app.models.feed.tables import Comment, Post, Reply, Reaction
 from app.models.profiles.tables import Friend, Notification
@@ -134,3 +135,16 @@ def get_notifications_queryset(current_user):
         .order_by(Notification.created_at, ascending=False)
     )
     return notifications
+
+
+async def set_chat_latest_messages(chats):
+    latest_message_ids = [chat.latest_message_id for chat in chats]
+    latest_messages = await Message.objects(
+        Message.sender, Message.sender.avatar, Message.file
+    ).where(Message.id.is_in(latest_message_ids))
+    latest_messages_dict = {
+        latest_message.chat: latest_message for latest_message in latest_messages
+    }
+    for chat in chats:
+        chat._latest_message_obj = latest_messages_dict.get(chat.id)
+    return chats
