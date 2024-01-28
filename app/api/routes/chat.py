@@ -6,10 +6,13 @@ from app.api.routes.utils import (
     get_chat_object,
     is_secured,
     set_chat_latest_messages,
+    usernames_to_add_and_remove_validations,
 )
 from app.api.schemas.chat import (
     ChatResponseSchema,
     ChatsResponseSchema,
+    GroupChatInputResponseSchema,
+    GroupChatInputSchema,
     MessageCreateResponseSchema,
     MessageCreateSchema,
 )
@@ -130,6 +133,7 @@ async def send_message(
     message.file_upload_id = file_upload_id
     return {"message": "Message sent", "data": message}
 
+
 @router.get(
     "/{chat_id}",
     summary="Retrieve messages from a Chat",
@@ -137,13 +141,88 @@ async def send_message(
         This endpoint retrieves all messages in a chat.
     """,
 )
-async def retrieve_messages(chat_id: UUID, page: int = 1, user: User = Depends(get_current_user)) -> ChatResponseSchema:
+async def retrieve_messages(
+    chat_id: UUID, page: int = 1, user: User = Depends(get_current_user)
+) -> ChatResponseSchema:
     chat = await get_chat_object(user, chat_id)
     paginator.page_size = 400
     paginated_data = await paginator.paginate_queryset(chat.messages, page)
     # Set latest message obj
     messages = paginated_data["items"]
     chat._latest_message_obj = messages[0] if len(messages) > 0 else None
-    
-    data = {"chat": chat, "messages": paginated_data, "users": chat.recipients}
+
+    data = {"chat": chat, "messages": paginated_data, "users": chat.users}
     return {"message": "Messages fetched", "data": data}
+
+
+@router.patch(
+    "/{chat_id}",
+    summary="Update a Group Chat",
+    description="""
+        This endpoint updates a group chat.
+    """,
+)
+async def update_group_chat(
+    chat_id: UUID, data: GroupChatInputSchema, user: User = Depends(get_current_user)
+) -> GroupChatInputResponseSchema:
+    chat = (
+        await Chat.objects(Chat.image)
+        .where(Chat.owner == user.id, Chat.ctype == "GROUP")
+        .get(Chat.id == chat_id)
+    )
+    if not chat:
+        raise RequestError(
+            err_code=ErrorCode.NON_EXISTENT,
+            err_msg="User owns no group chat with that ID",
+            status_code=404,
+        )
+
+    data = data.model_dump(exclude_none=True)
+
+    # Handle File Upload
+    file_type = data.pop("file_type", None)
+    image_upload_id = False
+    if file_type:
+        file = chat.image
+        if file:
+            file.resource_type = file_type
+            await file.save()
+        else:
+            file = await create_file(file_type)
+            data["image"] = file.id
+        image_upload_id = file.id
+    # Handle Users Upload or Remove
+    usernames_to_add = data.pop("usernames_to_add", None)
+    usernames_to_remove = data.pop("usernames_to_remove", None)
+    chat = await usernames_to_add_and_remove_validations(
+        chat, usernames_to_add, usernames_to_remove
+    )
+    chat = set_dict_attr(data, chat)
+    await chat.save()
+    chat.users = await User.objects(User.avatar).where(User.id.is_in(chat.user_ids))
+    chat.image_upload_id = image_upload_id
+    return {"message": "Chat updated", "data": chat}
+
+
+@router.delete(
+    "/{chat_id}",
+    summary="Delete a Group Chat",
+    description="""
+        This endpoint deletes a group chat.
+    """,
+    response=ResponseSchema,
+)
+async def delete_group_chat(chat_id: UUID, user: User = Depends(get_current_user)):
+    chat = (
+        await Chat.objects()
+        .where(Chat.owner == user.id, Chat.ctype == "GROUP")
+        .get(Chat.id == chat_id)
+    )
+    if not chat:
+        raise RequestError(
+            err_code=ErrorCode.NON_EXISTENT,
+            err_msg="User owns no group chat with that ID",
+            status_code=404,
+        )
+    await chat.remove()
+    return {"message": "Group Chat Deleted"}

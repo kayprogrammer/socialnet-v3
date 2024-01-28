@@ -160,15 +160,61 @@ async def create_file(file_type=None):
 
 
 async def get_chat_object(user, chat_id):
-    chat = await Chat.objects(Chat.owner, Chat.owner.avatar, Chat.image).where((Chat.owner == user.id) | (Chat.user_ids.any(user.id))).get(Chat.id == chat_id)
+    chat = (
+        await Chat.objects(Chat.owner, Chat.owner.avatar, Chat.image)
+        .where((Chat.owner == user.id) | (Chat.user_ids.any(user.id)))
+        .get(Chat.id == chat_id)
+    )
     if not chat:
         raise RequestError(
             err_code=ErrorCode.NON_EXISTENT,
             err_msg="User has no chat with that ID",
             status_code=404,
         )
-    messages = Message.objects(Message.sender, Message.sender.avatar, Message.file).where(Message.chat == chat_id).order_by(Message.created_at, ascending=False)
+    messages = (
+        Message.objects(Message.sender, Message.sender.avatar, Message.file)
+        .where(Message.chat == chat_id)
+        .order_by(Message.created_at, ascending=False)
+    )
     users = await User.objects(User.avatar).where(User.id.is_in(chat.user_ids))
     chat.messages = messages
-    chat.recipients = users
+    chat.users = users
+    return chat
+
+
+async def usernames_to_add_and_remove_validations(
+    chat: Chat, usernames_to_add=None, usernames_to_remove=None
+):
+    original_user_ids = chat.user_ids
+    if usernames_to_add:
+        users_to_add = (
+            await User.select(User.id)
+            .where(User.username.is_in(usernames_to_add))
+            .where((User.id.not_in(original_user_ids)) | (User.id != chat.owner))
+        )
+        user_ids_to_add = [user["id"] for user in users_to_add]
+        chat.user_ids += user_ids_to_add
+    if usernames_to_remove:
+        if not original_user_ids:
+            raise RequestError(
+                err_code=ErrorCode.INVALID_ENTRY,
+                err_msg="Invalid Entry",
+                status_code=422,
+                data={"usernames_to_remove": "No users to remove"},
+            )
+        users_to_remove = (
+            await User.select(User.id)
+            .where(User.username.is_in(usernames_to_remove))
+            .where((User.id != chat.owner) & (User.id in original_user_ids))
+        )
+        user_ids_to_remove = [user["id"] for user in users_to_remove]
+        chat.user_ids = chat.user_ids - user_ids_to_remove
+
+    if len(chat.user_ids) > 99:
+        raise RequestError(
+            err_code=ErrorCode.INVALID_ENTRY,
+            err_msg="Invalid Entry",
+            status_code=422,
+            data={"usernames_to_add": "99 users limit reached"},
+        )
     return chat
