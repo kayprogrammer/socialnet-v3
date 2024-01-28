@@ -108,7 +108,6 @@ async def update_profile(
     city_id = data.pop("city_id", None)
     city = None
     if city_id:
-        print("Halala")
         city = await City.objects().get(City.id == city_id)
         if not city:
             raise RequestError(
@@ -125,7 +124,7 @@ async def update_profile(
     if file_type:
         # Create or update file object
         avatar = user.avatar
-        if avatar:
+        if avatar.id:
             avatar.resource_type = file_type
             await avatar.save()
         else:

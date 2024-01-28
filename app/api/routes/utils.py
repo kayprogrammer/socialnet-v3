@@ -218,3 +218,20 @@ async def usernames_to_add_and_remove_validations(
             data={"usernames_to_add": "99 users limit reached"},
         )
     return chat
+
+
+async def get_message_object(message_id, user):
+    message = (
+        await Message.objects(
+            Message.sender, Message.sender.avatar, Message.chat, Message.file
+        )
+        .where(Message.sender == user.id)
+        .get(Message.id == message_id)
+    )
+    if not message:
+        raise RequestError(
+            err_code=ErrorCode.NON_EXISTENT,
+            err_msg="User has no message with that ID",
+            status_code=404,
+        )
+    return message

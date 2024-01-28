@@ -4,6 +4,7 @@ from app.api.deps import get_current_user
 from app.api.routes.utils import (
     create_file,
     get_chat_object,
+    get_message_object,
     is_secured,
     set_chat_latest_messages,
     usernames_to_add_and_remove_validations,
@@ -15,6 +16,7 @@ from app.api.schemas.chat import (
     GroupChatInputSchema,
     MessageCreateResponseSchema,
     MessageCreateSchema,
+    MessageUpdateSchema,
 )
 
 from app.api.utils.file_processors import ALLOWED_FILE_TYPES, ALLOWED_IMAGE_TYPES
@@ -184,7 +186,7 @@ async def update_group_chat(
     image_upload_id = False
     if file_type:
         file = chat.image
-        if file:
+        if file.id:
             file.resource_type = file_type
             await file.save()
         else:
@@ -210,9 +212,10 @@ async def update_group_chat(
     description="""
         This endpoint deletes a group chat.
     """,
-    response=ResponseSchema,
 )
-async def delete_group_chat(chat_id: UUID, user: User = Depends(get_current_user)):
+async def delete_group_chat(
+    chat_id: UUID, user: User = Depends(get_current_user)
+) -> ResponseSchema:
     chat = (
         await Chat.objects()
         .where(Chat.owner == user.id, Chat.ctype == "GROUP")
@@ -226,3 +229,38 @@ async def delete_group_chat(chat_id: UUID, user: User = Depends(get_current_user
         )
     await chat.remove()
     return {"message": "Group Chat Deleted"}
+
+
+@router.put(
+    "/messages/{message_id}",
+    summary="Update a message",
+    description=f"""
+        This endpoint updates a message.
+        You must either send a text or a file or both.
+        The file_upload_data in the response is what is used for uploading the file to cloudinary from client
+        ALLOWED FILE TYPES: {", ".join(ALLOWED_FILE_TYPES)}
+    """,
+)
+async def update_message(
+    message_id: UUID, data: MessageUpdateSchema, user: User = Depends(get_current_user)
+) -> MessageCreateResponseSchema:
+    message = await get_message_object(message_id, user)
+
+    data = data.model_dump(exclude_none=True)
+    # Handle File Upload
+    file_upload_id = None
+    file_type = data.pop("file_type", None)
+    if file_type:
+        file = message.file
+        if file.id:
+            file.resource_type = file_type
+            await file.save()
+        else:
+            file = await create_file(file_type)
+            data["file"] = file.id
+        file_upload_id = file.id
+    message = set_dict_attr(data, message)
+    await message.save()
+    message.file_upload_id = file_upload_id
+    message.chat = message.chat.id
+    return {"message": "Message updated", "data": message}
