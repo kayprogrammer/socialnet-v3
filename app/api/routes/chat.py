@@ -264,3 +264,35 @@ async def update_message(
     message.file_upload_id = file_upload_id
     message.chat = message.chat.id
     return {"message": "Message updated", "data": message}
+
+
+@router.delete(
+    "/messages/{message_id}",
+    summary="Delete a message",
+    description="""
+        This endpoint deletes a message.
+
+    """,
+)
+async def delete_message(
+    message_id: UUID, user: User = Depends(get_current_user)
+) -> ResponseSchema:
+    message = await get_message_object(message_id, user)
+    chat = message.chat
+    messages_count = await Message.count().where(Message.chat == chat.id)
+    # Delete message and chat if its the last message in the dm being deleted
+    if messages_count == 1 and chat.ctype == "DM":
+        await chat.remove()  # Message deletes if chat gets deleted (CASCADE)
+    else:
+        # Set new latest message
+        new_latest_message = (
+            await Message.select(Message.id)
+            .where(Message.chat == chat.id, Message.id != message.id)
+            .order_by(Message.created_at, ascending=False)
+            .first()
+        )
+        new_latest_message_id = new_latest_message["id"] if new_latest_message else None
+        chat.latest_message_id = new_latest_message_id
+        await chat.save()
+        await message.remove()
+    return {"message": "Message deleted"}
