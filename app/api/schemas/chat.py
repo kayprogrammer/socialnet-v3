@@ -91,7 +91,7 @@ class GroupChatInputSchema(BaseModel):
     description: str = Field(None, max_length=1000)
     usernames_to_add: Optional[List[str]] = username_field
     usernames_to_remove: Optional[List[str]] = username_field
-    file_type: str = Field(None, example="image/jpeg")
+    file_type: Optional[str] = Field(None, example="image/jpeg")
 
     @validator("file_type", always=True)
     def validate_img_type(cls, v):
@@ -114,7 +114,7 @@ class GroupChatCreateSchema(GroupChatInputSchema):
     usernames_to_add: List[str] = Field(
         ..., min_items=1, max_items=99, example=["john-doe"]
     )
-    usernames_to_remove: List[str] = Field(None, exclude=True, hidden=True)
+    usernames_to_remove: Optional[List[str]] = Field(None, exclude=True, hidden=True)
 
 
 # RESPONSES

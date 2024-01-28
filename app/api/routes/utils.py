@@ -205,10 +205,10 @@ async def usernames_to_add_and_remove_validations(
         users_to_remove = (
             await User.select(User.id)
             .where(User.username.is_in(usernames_to_remove))
-            .where((User.id != chat.owner) & (User.id in original_user_ids))
+            .where((User.id != chat.owner) & (User.id.is_in(original_user_ids)))
         )
         user_ids_to_remove = [user["id"] for user in users_to_remove]
-        chat.user_ids = chat.user_ids - user_ids_to_remove
+        chat.user_ids = set(chat.user_ids) - set(user_ids_to_remove)
 
     if len(chat.user_ids) > 99:
         raise RequestError(

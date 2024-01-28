@@ -12,6 +12,7 @@ from app.api.routes.utils import (
 from app.api.schemas.chat import (
     ChatResponseSchema,
     ChatsResponseSchema,
+    GroupChatCreateSchema,
     GroupChatInputResponseSchema,
     GroupChatInputSchema,
     MessageCreateResponseSchema,
@@ -29,7 +30,7 @@ from app.api.schemas.base import ResponseSchema
 from app.models.accounts.tables import User
 
 from app.common.handlers import RequestError
-from app.models.base.tables import File
+from piccolo.query.methods.select import Count
 from app.models.chat.tables import Chat, Message
 
 router = APIRouter()
@@ -296,3 +297,47 @@ async def delete_message(
         await chat.save()
         await message.remove()
     return {"message": "Message deleted"}
+
+
+@router.post(
+    "/groups/group",
+    summary="Create a group chat",
+    description="""
+        This endpoint creates a group chat.
+        The users_entry field should be a list of usernames you want to add to the group.
+        Note: You cannot add more than 99 users in a group (1 owner + 99 other users = 100 users total)
+    """,
+    status_code=201,
+)
+async def create_group_chat(
+    data: GroupChatCreateSchema, user: User = Depends(get_current_user)
+) -> GroupChatInputResponseSchema:
+    data = data.model_dump(exclude_none=True)
+    data.update({"owner": user, "ctype": "GROUP"})
+    # Handle File Upload
+    file_type = data.pop("file_type", None)
+    image_upload_id = None
+    if file_type:
+        file = await create_file(file_type)
+        data["image"] = file.id
+        image_upload_id = file.id
+
+    # Handle Users Upload or Remove
+    usernames_to_add = data.pop("usernames_to_add")
+    users_to_add = await User.objects(User.avatar).where(
+        User.username.is_in(usernames_to_add), User.id != user.id
+    )
+    if not users_to_add:
+        raise RequestError(
+            err_code=ErrorCode.INVALID_ENTRY,
+            err_msg="Invalid Entry",
+            data={"usernames_to_add": "Enter at least one valid username"},
+            status_code=422,
+        )
+
+    # Create Chat
+    data["user_ids"] = [user.id for user in users_to_add]
+    chat = await Chat.objects().create(**data)
+    chat.users = users_to_add
+    chat.image_upload_id = image_upload_id
+    return {"message": "Chat created", "data": chat}
