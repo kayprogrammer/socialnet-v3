@@ -1,5 +1,7 @@
 import json
-from fastapi import WebSocket
+from fastapi import WebSocket, WebSocketException
+
+from app.common.handlers import ErrorCode
 
 
 class BaseSocketConnectionManager:
@@ -9,19 +11,17 @@ class BaseSocketConnectionManager:
     async def connect(self, websocket: WebSocket):
         self.active_connections.append(websocket)
 
-    async def disconnect(self, websocket: WebSocket, self_disconnection=False):
-        self.active_connections.remove(websocket)
-        if not self_disconnection:
-            await websocket.close()
+    def disconnect(self, code, reason):
+        raise WebSocketException(code, reason)
 
     async def receive_data(self, websocket: WebSocket):
-        data = None
-        err = None
         try:
             data = await websocket.receive_json()
         except json.decoder.JSONDecodeError:
-            err = "Invalid JSON"
-        return data, err
+            await self.send_error_data(
+                websocket, "Invalid JSON", ErrorCode.INVALID_DATA_TYPE
+            )
+        return data
 
     async def send_personal_message(self, data: dict, websocket: WebSocket):
         await websocket.send_json(data)
@@ -31,10 +31,20 @@ class BaseSocketConnectionManager:
             await connection.send_json(data)
 
     async def send_error_data(
-        self, websocket: WebSocket, message, code=4000, data=None
+        self,
+        websocket: WebSocket,
+        message,
+        err_type=ErrorCode.BAD_REQUEST,
+        code=4000,
+        data=None,
     ):
-        err_data = {"status": "error", "code": code, "message": message}
+        err_data = {
+            "status": "error",
+            "type": err_type,
+            "code": code,
+            "message": message,
+        }
         if data:
             err_data["data"] = data
         await websocket.send_json(err_data)
-        await self.disconnect(websocket)
+        self.disconnect(code, message)

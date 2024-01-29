@@ -19,6 +19,7 @@ from app.api.schemas.chat import (
     MessageCreateSchema,
     MessageUpdateSchema,
 )
+from app.api.sockets.chat import send_chat_deletion_in_socket
 
 from app.api.utils.file_processors import ALLOWED_FILE_TYPES, ALLOWED_IMAGE_TYPES
 from app.api.utils.paginators import Paginator
@@ -276,11 +277,18 @@ async def update_message(
     """,
 )
 async def delete_message(
-    message_id: UUID, user: User = Depends(get_current_user)
+    request: Request, message_id: UUID, user: User = Depends(get_current_user)
 ) -> ResponseSchema:
     message = await get_message_object(message_id, user)
     chat = message.chat
-    messages_count = await Message.count().where(Message.chat == chat.id)
+    chat_id = chat.id
+    messages_count = await Message.count().where(Message.chat == chat_id)
+
+    # Send socket message
+    await send_chat_deletion_in_socket(
+        is_secured(request), request.headers["host"], chat_id
+    )
+
     # Delete message and chat if its the last message in the dm being deleted
     if messages_count == 1 and chat.ctype == "DM":
         await chat.remove()  # Message deletes if chat gets deleted (CASCADE)
@@ -288,7 +296,7 @@ async def delete_message(
         # Set new latest message
         new_latest_message = (
             await Message.select(Message.id)
-            .where(Message.chat == chat.id, Message.id != message.id)
+            .where(Message.chat == chat_id, Message.id != message.id)
             .order_by(Message.created_at, ascending=False)
             .first()
         )

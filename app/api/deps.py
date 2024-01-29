@@ -23,6 +23,7 @@ async def get_user(token, socket: WebSocket = None):
         await socket.send_json(
             {
                 "status": "error",
+                "type": ErrorCode.INVALID_TOKEN,
                 "code": 4001,
                 "message": err_msg,
             }
@@ -59,7 +60,14 @@ async def get_current_socket_user(
     # Return user or socket secret key
     if not token:
         err_msg = "Unauthorized User!"
-        await websocket.send_json({"status": "error", "code": 4001, "message": err_msg})
+        await websocket.send_json(
+            {
+                "status": "error",
+                "type": ErrorCode.UNAUTHORIZED_USER,
+                "code": 4001,
+                "message": err_msg,
+            }
+        )
         raise WebSocketException(code=4001, reason=err_msg)
     if token == settings.SOCKET_SECRET:
         return token
