@@ -36,7 +36,7 @@ class ChatSocketManager(BaseSocketConnectionManager):
     async def validate_chat_membership(self, websocket: WebSocket, id: UUID):
         user = websocket.scope["user"]
         user_id = user.id
-        chat, obj_user = await self.get_chat_or_user(user, id)
+        chat, obj_user = await self.get_chat_or_user(websocket, user, id)
         if not chat and not obj_user:  # If no chat nor user
             await self.send_error_data(websocket, "Invalid ID", "invalid_input", 4004)
 
@@ -47,15 +47,16 @@ class ChatSocketManager(BaseSocketConnectionManager):
                 websocket, "You're not a member of this chat", "invalid_member", 4001
             )
 
-    async def get_chat_or_user(self, user, id):
+    async def get_chat_or_user(self, websocket: WebSocket, user, id):
         chat, obj_user = None, None
         if user.id != id:
             chat = await Chat.objects().get(Chat.id == id)
             if not chat:
                 # Probably a first DM message
-                obj_user = await User.objects().get(User.id == id)
+                obj_user = await User.objects().get(User.username == id)
         else:
             obj_user = user  # Message is sent to self
+        websocket.scope["obj_user"] = obj_user
         return chat, obj_user
 
     async def receive_data(self, websocket: WebSocket):
@@ -92,15 +93,12 @@ class ChatSocketManager(BaseSocketConnectionManager):
                     websocket, "Message isn't yours", ErrorCode.INVALID_OWNER, 4001
                 )
 
-            message_data = {
-                "id": str(data.id),
+            data = message_data | {
                 "chat_id": str(message.chat),
                 "created_at": str(message.created_at),
                 "updated_at": str(message.updated_at),
             }
-            message_data = message_data | MessageSchema.model_validate(
-                message
-            ).model_dump(
+            message_data = data | MessageSchema.model_validate(message).model_dump(
                 exclude={"id", "chat", "created_at", "updated_at"}, by_alias=True
             )
         return message_data
@@ -109,7 +107,14 @@ class ChatSocketManager(BaseSocketConnectionManager):
         for connection in self.active_connections:
             # Only true receivers should access the data
             if connection.scope["group_name"] == group_name:
-                await connection.send_json(data)
+                user = connection.scope["user"]
+                obj_user = connection.scope.get("obj_user")
+                if obj_user:
+                    # Ensure that reading messages from a user id can only be done by the owner
+                    if user == obj_user:
+                        await connection.send_json(data)
+                else:
+                    await connection.send_json(data)
 
 
 manager = ChatSocketManager()
@@ -118,7 +123,7 @@ manager = ChatSocketManager()
 @chat_socket_router.websocket("/api/v3/ws/chats/{chat_id}")
 async def websocket_endpoint(
     websocket: WebSocket,
-    chat_id: UUID,
+    chat_id: str,
     user: Union[User, str] = Depends(get_current_socket_user),
 ):
     websocket.scope["user"] = user
@@ -136,12 +141,14 @@ async def websocket_endpoint(
             await websocket.close()
 
 
-# Send notification in websocket
-async def send_chat_deletion_in_socket(secured: bool, host: str, chat_id: UUID):
+# Send message deletion details in websocket
+async def send_message_deletion_in_socket(
+    secured: bool, host: str, chat_id: UUID, message_id: UUID
+):
     websocket_scheme = "wss://" if secured else "ws://"
     uri = f"{websocket_scheme}{host}/api/v3/ws/chats/{chat_id}"
     chat_data = {
-        "id": str(chat_id),
+        "id": str(message_id),
         "status": "DELETED",
     }
     headers = [

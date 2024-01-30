@@ -1,5 +1,5 @@
 from uuid import UUID
-from fastapi import APIRouter, Depends, Path, Request
+from fastapi import APIRouter, Depends, Request
 from app.api.deps import get_current_user
 from app.api.routes.utils import (
     create_file,
@@ -19,9 +19,9 @@ from app.api.schemas.chat import (
     MessageCreateSchema,
     MessageUpdateSchema,
 )
-from app.api.sockets.chat import send_chat_deletion_in_socket
+from app.api.sockets.chat import send_message_deletion_in_socket
 
-from app.api.utils.file_processors import ALLOWED_FILE_TYPES, ALLOWED_IMAGE_TYPES
+from app.api.utils.file_processors import ALLOWED_FILE_TYPES
 from app.api.utils.paginators import Paginator
 from app.api.utils.utils import set_dict_attr
 from app.common.handlers import ErrorCode
@@ -31,7 +31,6 @@ from app.api.schemas.base import ResponseSchema
 from app.models.accounts.tables import User
 
 from app.common.handlers import RequestError
-from piccolo.query.methods.select import Count
 from app.models.chat.tables import Chat, Message
 
 router = APIRouter()
@@ -285,8 +284,8 @@ async def delete_message(
     messages_count = await Message.count().where(Message.chat == chat_id)
 
     # Send socket message
-    await send_chat_deletion_in_socket(
-        is_secured(request), request.headers["host"], chat_id
+    await send_message_deletion_in_socket(
+        is_secured(request), request.headers["host"], chat_id, message_id
     )
 
     # Delete message and chat if its the last message in the dm being deleted
