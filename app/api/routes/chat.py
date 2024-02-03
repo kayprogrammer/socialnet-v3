@@ -182,6 +182,13 @@ async def update_group_chat(
 
     data = data.model_dump(exclude_none=True)
 
+    # Handle Users Upload or Remove
+    usernames_to_add = data.pop("usernames_to_add", None)
+    usernames_to_remove = data.pop("usernames_to_remove", None)
+    chat = await usernames_to_add_and_remove_validations(
+        chat, usernames_to_add, usernames_to_remove
+    )
+    
     # Handle File Upload
     file_type = data.pop("file_type", None)
     image_upload_id = False
@@ -194,12 +201,6 @@ async def update_group_chat(
             file = await create_file(file_type)
             data["image"] = file.id
         image_upload_id = file.id
-    # Handle Users Upload or Remove
-    usernames_to_add = data.pop("usernames_to_add", None)
-    usernames_to_remove = data.pop("usernames_to_remove", None)
-    chat = await usernames_to_add_and_remove_validations(
-        chat, usernames_to_add, usernames_to_remove
-    )
     chat = set_dict_attr(data, chat)
     await chat.save()
     chat.users = await User.objects(User.avatar).where(User.id.is_in(chat.user_ids))
