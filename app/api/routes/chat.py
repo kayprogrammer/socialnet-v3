@@ -322,15 +322,8 @@ async def create_group_chat(
 ) -> GroupChatInputResponseSchema:
     data = data.model_dump(exclude_none=True)
     data.update({"owner": user, "ctype": "GROUP"})
-    # Handle File Upload
-    file_type = data.pop("file_type", None)
-    image_upload_id = None
-    if file_type:
-        file = await create_file(file_type)
-        data["image"] = file.id
-        image_upload_id = file.id
 
-    # Handle Users Upload or Remove
+    # Handle Users Upload
     usernames_to_add = data.pop("usernames_to_add")
     users_to_add = await User.objects(User.avatar).where(
         User.username.is_in(usernames_to_add), User.id != user.id
@@ -343,6 +336,14 @@ async def create_group_chat(
             status_code=422,
         )
 
+    # Handle File Upload
+    file_type = data.pop("file_type", None)
+    image_upload_id = None
+    if file_type:
+        file = await create_file(file_type)
+        data["image"] = file.id
+        image_upload_id = file.id
+        
     # Create Chat
     data["user_ids"] = [user.id for user in users_to_add]
     chat = await Chat.objects().create(**data)
