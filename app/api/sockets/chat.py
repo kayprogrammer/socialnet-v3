@@ -61,7 +61,7 @@ class ChatSocketManager(BaseSocketConnectionManager):
 
     async def receive_data(self, websocket: WebSocket):
         data = await super().receive_data(websocket)
-        # Ensure data is a Message data. That means it align with the Message schema above
+        # Ensure data is a Message data. That means it aligns with the Message schema above
         try:
             data = SocketMessageSchema(**data)
         except Exception:
@@ -74,11 +74,10 @@ class ChatSocketManager(BaseSocketConnectionManager):
             await self.send_error_data(
                 websocket,
                 "Not allowed to send deletion socket",
-                ErrorCode.INVALID_ENTRY,
+                ErrorCode.UNAUTHORIZED_USER,
                 4001,
             )
 
-        status = data.status
         message_data = {"id": str(data.id), "status": status}
         if status != "DELETED":
             message = await Message.objects(
@@ -88,7 +87,7 @@ class ChatSocketManager(BaseSocketConnectionManager):
                 await self.send_error_data(
                     websocket, "Invalid message ID", ErrorCode.NON_EXISTENT, 4004
                 )
-            if message.sender.id != user.id:
+            elif message.sender.id != user.id:
                 await self.send_error_data(
                     websocket, "Message isn't yours", ErrorCode.INVALID_OWNER, 4001
                 )
@@ -155,6 +154,6 @@ async def send_message_deletion_in_socket(
         ("Authorization", settings.SOCKET_SECRET),
     ]
     async with websockets.connect(uri, extra_headers=headers) as websocket:
-        # Send a notification to the WebSocket server
+        # Send the message to the WebSocket server
         await websocket.send(json.dumps(chat_data))
         await websocket.close()
