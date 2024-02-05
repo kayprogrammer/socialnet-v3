@@ -128,9 +128,9 @@ async def websocket_endpoint(
     websocket.scope["user"] = user
     try:
         while True:
-            await manager.connect(websocket, chat_id)
             group_name = f"chat_{chat_id}"
             websocket.scope["group_name"] = group_name
+            await manager.connect(websocket, chat_id)
             data = await manager.receive_data(websocket)
             await manager.broadcast(data, group_name)
     except Exception as e:
