@@ -1,12 +1,15 @@
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
+from fastapi.routing import Mount
 from piccolo.engine import engine_finder
+from piccolo_admin.endpoints import create_admin
 from starlette.middleware.cors import CORSMiddleware
 
 from app.api.routers import main_router
 from app.api.sockets.notification import notification_socket_router
 from app.api.sockets.chat import chat_socket_router
 from app.common.handlers import exc_handlers
+from app.core.admin import ALL_TABLE_CLASSES
 from app.core.config import settings
 
 
@@ -19,6 +22,9 @@ async def lifespan(app: FastAPI):
     # Close Database connection pool
     await engine.close_connection_pool()
 
+
+# Piccolo Admin
+admin = create_admin(ALL_TABLE_CLASSES, allowed_hosts=settings.ALLOWED_HOSTS)
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -46,6 +52,7 @@ app = FastAPI(
     security=[{"BearerToken": []}],
     exception_handlers=exc_handlers,
     lifespan=lifespan,
+    routes=[Mount("/admin/", admin)],
 )
 
 # Set all CORS enabled origins

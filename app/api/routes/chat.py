@@ -188,7 +188,7 @@ async def update_group_chat(
     chat = await usernames_to_add_and_remove_validations(
         chat, usernames_to_add, usernames_to_remove
     )
-    
+
     # Handle File Upload
     file_type = data.pop("file_type", None)
     image_upload_id = False
@@ -343,7 +343,7 @@ async def create_group_chat(
         file = await create_file(file_type)
         data["image"] = file.id
         image_upload_id = file.id
-        
+
     # Create Chat
     data["user_ids"] = [user.id for user in users_to_add]
     chat = await Chat.objects().create(**data)

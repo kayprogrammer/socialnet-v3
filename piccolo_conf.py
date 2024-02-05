@@ -11,7 +11,7 @@ DB = PostgresEngine(
         "password": settings.POSTGRES_PASSWORD,
         "port": settings.POSTGRES_PORT,
     },
-    log_responses=True if settings.DEBUG else False,
+    log_responses=settings.DEBUG,
 )
 
 APP_REGISTRY = AppRegistry(
@@ -22,5 +22,6 @@ APP_REGISTRY = AppRegistry(
         "app.models.feed.piccolo_app",
         "app.models.profiles.piccolo_app",
         "app.models.chat.piccolo_app",
+        "piccolo_admin.piccolo_app",
     ]
 )

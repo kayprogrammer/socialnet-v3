@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     PROJECT_NAME: str
     FRONTEND_URL: str
     CORS_ALLOWED_ORIGINS: Union[List, str]
+    ALLOWED_HOSTS: Union[List, str]
 
     # POSTGRESQL
     POSTGRES_USER: str
@@ -58,7 +59,7 @@ class Settings(BaseSettings):
     CLOUDINARY_API_KEY: str
     CLOUDINARY_API_SECRET: str
 
-    @validator("CORS_ALLOWED_ORIGINS", pre=True)
+    @validator("CORS_ALLOWED_ORIGINS", "ALLOWED_HOSTS", pre=True)
     def assemble_cors_origins(cls, v):
         return v.split()
 

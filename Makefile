@@ -22,7 +22,10 @@ serv:
 
 mmig: ## Run migrations. Use "make mmig app='app'" or "make mmig app='app' message='App migrated'"
 	piccolo migrations new ${app} --auto ${if $(message),--desc=${message}}
-	
+
+mmig_pic: # create migrations for original piccolo user
+	piccolo migrations forwards user && piccolo migrations forwards session_auth
+
 mig:
 	piccolo migrations forwards all
 

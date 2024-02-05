@@ -1,6 +1,7 @@
 from app.core.config import settings
 from app.models.accounts.tables import User
 from app.models.general.tables import SiteDetail
+from piccolo.apps.user.tables import BaseUser
 
 
 class CreateData(object):
@@ -23,6 +24,28 @@ class CreateData(object):
         }
         if not superuser:
             superuser = await User.create_user(**user_dict)
+
+        # For piccolo admin
+        username = "testadmin"
+        piccolo_admin_superuser = (
+            await BaseUser.objects()
+            .where(
+                (BaseUser.username == username)
+                | (BaseUser.email == settings.FIRST_SUPERUSER_EMAIL)
+            )
+            .first()
+        )
+        if not piccolo_admin_superuser:
+            superuser = await BaseUser.create_user(
+                first_name=user_dict["first_name"],
+                last_name=user_dict["last_name"],
+                username=username,
+                email=settings.FIRST_SUPERUSER_EMAIL,
+                password=settings.FIRST_SUPERUSER_PASSWORD,
+                active=True,
+                superuser=True,
+                admin=True,
+            )
         return superuser
 
     async def create_client(self) -> None:
