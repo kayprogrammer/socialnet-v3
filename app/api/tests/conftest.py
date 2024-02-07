@@ -17,12 +17,14 @@ test_db = factories.postgresql_proc(port=None, dbname="test_db")
 
 TABLES = Finder().get_table_classes()
 
+
 @pytest.fixture(scope="session")
 def event_loop():
     """Overrides pytest default function scoped event loop"""
     loop = asyncio.get_event_loop_policy().new_event_loop()
     yield loop
     loop.close()
+
 
 @pytest.fixture(scope="session")
 def database(test_db):
@@ -46,12 +48,14 @@ def database(test_db):
         )
         yield DB
 
+
 @pytest.fixture(autouse=True)
 async def setup_db(database, mocker):
     mocker.patch("app.piccolo_conf.DB", new=database)
     await create_db_tables(*TABLES)
     yield
     await drop_db_tables(*TABLES)
+
 
 @pytest.fixture
 async def client():
@@ -114,8 +118,10 @@ async def authorized_client(verified_user: User, client):
 @pytest.fixture
 async def create_post(verified_user):
     # Create File
-    file = await File.objects().create(resource_type= "image/jpeg")
+    file = await File.objects().create(resource_type="image/jpeg")
 
     # Create Post
-    post = await Post.objects().create(author=verified_user.id, text="New Post", image=file.id)
+    post = await Post.objects().create(
+        author=verified_user.id, text="New Post", image=file.id
+    )
     return {"user": verified_user, "post": post}
