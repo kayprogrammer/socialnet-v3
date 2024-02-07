@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     ALLOWED_HOSTS: Union[List, str]
 
     # POSTGRESQL
+    PICCOLO_CONF: str
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str
     POSTGRES_SERVER: str
