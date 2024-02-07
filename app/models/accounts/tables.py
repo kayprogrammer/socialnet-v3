@@ -274,7 +274,7 @@ class User(BaseModel, tablename="base_user"):
     @property
     def get_avatar(self):
         avatar = self.avatar
-        if avatar.id:
+        if avatar and avatar.id:
             return FileProcessor.generate_file_url(
                 key=avatar.id,
                 folder="avatars",
@@ -286,14 +286,6 @@ class User(BaseModel, tablename="base_user"):
     def city_name(self):
         city = self.city
         return city.name if city else None
-
-    @property
-    def notifications(self):
-        pass
-
-    @property
-    def notifications_read(self):
-        pass
 
 
 class Otp(BaseModel):
