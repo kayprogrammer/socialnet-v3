@@ -2,6 +2,7 @@ from fastapi import BackgroundTasks
 from fastapi_mail import MessageSchema, FastMail, MessageType
 from app.core.config import settings
 from app.models.accounts.tables import Otp
+import os
 
 
 async def sort_email(user, type):
@@ -27,7 +28,7 @@ async def sort_email(user, type):
         data = {"template_file": template_file, "subject": subject}
     return data
 
-import os
+
 async def send_email(background_tasks: BackgroundTasks, user, type):
     if os.environ["ENVIRONMENT"] != "testing":
         email_data = await sort_email(user, type)

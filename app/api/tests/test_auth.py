@@ -4,6 +4,7 @@ from app.models.accounts.tables import Otp
 
 BASE_URL_PATH = "/api/v3/auth"
 
+
 async def test_register_user(client):
     # Setup
     email = "testregisteruser@example.com"
@@ -51,7 +52,7 @@ async def test_verify_email(mocker, client, test_user):
     }
     # Verify that the email verification succeeds with a valid otp
     otp = await Otp.objects().create(user=test_user.id)
-    
+
     response = await client.post(
         f"{BASE_URL_PATH}/verify-email",
         json={"email": test_user.email, "otp": otp.code},
@@ -67,7 +68,7 @@ async def test_resend_verification_email(mocker, client, test_user):
     user_in = {"email": test_user.email}
 
     # Verify that an unverified user can get a new email
-    
+
     # Then, attempt to resend the verification email
     response = await client.post(
         f"{BASE_URL_PATH}/resend-verification-email", json=user_in
@@ -81,7 +82,7 @@ async def test_resend_verification_email(mocker, client, test_user):
     # Verify that a verified user cannot get a new email
     test_user.is_email_verified = True
     await test_user.save()
-    
+
     response = await client.post(
         f"{BASE_URL_PATH}/resend-verification-email",
         json={"email": test_user.email},
@@ -93,7 +94,7 @@ async def test_resend_verification_email(mocker, client, test_user):
     }
 
     # Verify that an error is raised when attempting to resend the verification email for a user that doesn't exist
-    
+
     response = await client.post(
         f"{BASE_URL_PATH}/resend-verification-email",
         json={"email": "invalid@example.com"},
@@ -180,7 +181,6 @@ async def test_get_password_otp(mocker, client, verified_user):
     password = "testverifieduser123"
     user_in = {"email": email, "password": password}
 
-    
     # Then, attempt to get password reset token
     response = await client.post(
         f"{BASE_URL_PATH}/send-password-reset-otp", json=user_in
@@ -192,7 +192,7 @@ async def test_get_password_otp(mocker, client, verified_user):
     }
 
     # Verify that an error is raised when attempting to get password reset token for a user that doesn't exist
-    
+
     response = await client.post(
         f"{BASE_URL_PATH}/send-password-reset-otp",
         json={"email": "invalid@example.com"},
@@ -244,7 +244,7 @@ async def test_reset_password(mocker, client, verified_user):
     # Verify that password reset succeeds
     otp = (await Otp.objects().create(user=verified_user.id)).code
     password_reset_data["otp"] = otp
-    
+
     response = await client.post(
         f"{BASE_URL_PATH}/set-new-password",
         json=password_reset_data,

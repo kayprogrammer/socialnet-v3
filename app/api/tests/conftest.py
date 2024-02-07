@@ -8,15 +8,15 @@ from pytest_postgresql import factories
 from pytest_postgresql.janitor import DatabaseJanitor
 from httpx import AsyncClient
 
-from app.models.accounts.tables import User
+from app.models.accounts.tables import City, Country, Region, User
 from app.models.base.tables import File
 from app.models.feed.tables import Post
 import pytest, asyncio, os
 
-test_db = factories.postgresql_proc(port=None, dbname="test_db")
-
-TABLES = Finder().get_table_classes()
 os.environ["ENVIRONMENT"] = "testing"
+test_db = factories.postgresql_proc(port=None, dbname="test_db")
+TABLES = Finder().get_table_classes()
+
 
 @pytest.fixture(scope="session")
 def event_loop():
@@ -126,10 +126,14 @@ async def create_post(verified_user):
     )
     return {"user": verified_user, "post": post}
 
-from unittest.mock import AsyncMock
 
 @pytest.fixture
-def mocker_send_email(mocker):
-    async_mock = AsyncMock(return_value=None)
-    mocker.patch('app.api.utils.emails.send_email', side_effect=async_mock)
-    return async_mock
+async def city():
+    country = await Country.objects().create(name="TestCountry", code="TC")
+    region = await Region.objects().create(name="TestRegion", country=country.id)
+    city = await City.objects().create(
+        name="TestCity", region=region.id, country=country.id
+    )
+    city.country = country
+    city.region = region
+    return city
