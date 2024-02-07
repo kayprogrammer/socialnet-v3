@@ -1,6 +1,6 @@
 from fastapi_mail import ConnectionConfig
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import List, Literal, Optional, Union
 
 from pydantic import EmailStr, validator
 from pydantic_settings import BaseSettings
@@ -11,6 +11,7 @@ PROJECT_DIR = Path(__file__).parent.parent.parent
 class Settings(BaseSettings):
     # DEBUG
     DEBUG: bool
+    ENVIRONMENT: Literal["development", "testing", "production"]
 
     # TOKENS
     EMAIL_OTP_EXPIRE_SECONDS: int
