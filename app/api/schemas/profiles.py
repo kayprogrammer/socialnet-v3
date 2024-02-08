@@ -51,8 +51,8 @@ class ProfileUpdateSchema(BaseModel):
         max_length=200,
         min_length=1,
     )
-    dob: Optional[date]
-    city_id: Optional[UUID]
+    dob: Optional[date] = None
+    city_id: Optional[UUID] = None
     file_type: Optional[str] = Field(None, example="image/jpeg")
 
     @validator("file_type")
