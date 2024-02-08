@@ -173,3 +173,32 @@ async def test_send_friend_request(authorized_client):
         "message": "Friend Request sent",
     }
     # You can test for other error responses yourself.....
+
+
+async def test_accept_or_reject_friend_request(another_authorized_client, friend):
+    data = {"username": "invalid_username", "accepted": True}
+    friend.status = "PENDING"
+    await friend.save()
+
+    # Test for valid response for non-existent user name
+    response = await another_authorized_client.put(
+        f"{BASE_URL_PATH}/friends/requests", json=data
+    )
+    assert response.status_code == 404
+    assert response.json() == {
+        "status": "failure",
+        "code": ErrorCode.NON_EXISTENT,
+        "message": "User does not exist!",
+    }
+
+    # Test for valid response for valid inputs
+    data["username"] = friend.requester.username
+    response = await another_authorized_client.put(
+        f"{BASE_URL_PATH}/friends/requests", json=data
+    )
+    assert response.status_code == 200
+    assert response.json() == {
+        "status": "success",
+        "message": "Friend Request Accepted",
+    }
+    # You can test for other error responses yourself.....

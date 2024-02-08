@@ -118,6 +118,22 @@ async def authorized_client(verified_user: User, client):
 
 
 @pytest.fixture
+async def another_authorized_client(another_verified_user: User, client):
+    access = await Authentication.create_access_token(
+        {
+            "user_id": str(another_verified_user.id),
+            "username": another_verified_user.username,
+        }
+    )
+    refresh = await Authentication.create_refresh_token()
+    another_verified_user.access_token = access
+    another_verified_user.refresh_token = refresh
+    await another_verified_user.save()
+    client.headers = {**client.headers, "Authorization": f"Bearer {access}"}
+    return client
+
+
+@pytest.fixture
 async def create_post(verified_user):
     # Create File
     file = await File.objects().create(resource_type="image/jpeg")
