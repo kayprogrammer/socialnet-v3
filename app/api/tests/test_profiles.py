@@ -1,6 +1,5 @@
-from slugify import slugify
 from app.common.handlers import ErrorCode
-
+from app.models.accounts.tables import User
 
 BASE_URL_PATH = "/api/v3/profiles"
 
@@ -142,3 +141,35 @@ async def test_retrieve_friends(authorized_client, friend, mocker):
             ],
         },
     }
+
+
+async def test_send_friend_request(authorized_client):
+    data = {"username": "invalid_username"}
+    user = await User.create_user(
+        first_name="Friend",
+        last_name="User",
+        email="friend_user@email.com",
+        password="password",
+    )
+    # Test for valid response for non-existent user name
+    response = await authorized_client.post(
+        f"{BASE_URL_PATH}/friends/requests", json=data
+    )
+    assert response.status_code == 404
+    assert response.json() == {
+        "status": "failure",
+        "code": ErrorCode.NON_EXISTENT,
+        "message": "User does not exist!",
+    }
+
+    # Test for valid response for valid inputs
+    data["username"] = user.username
+    response = await authorized_client.post(
+        f"{BASE_URL_PATH}/friends/requests", json=data
+    )
+    assert response.status_code == 201
+    assert response.json() == {
+        "status": "success",
+        "message": "Friend Request sent",
+    }
+    # You can test for other error responses yourself.....

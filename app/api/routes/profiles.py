@@ -1,5 +1,6 @@
 import re
 from fastapi import APIRouter, Depends
+from fastapi.responses import JSONResponse
 from app.api.deps import get_current_user, get_current_user_or_guest
 from app.api.routes.utils import (
     get_notifications_queryset,
@@ -243,7 +244,9 @@ async def send_or_delete_friend_request(
     else:
         await Friend.objects().create(requester=user.id, requestee=requestee.id)
 
-    return {"message": message, "status_code": status_code}
+    return JSONResponse(
+        {"status": "success", "message": message}, status_code=status_code
+    )
 
 
 @router.put(
