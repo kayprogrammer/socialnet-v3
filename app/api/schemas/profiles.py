@@ -114,6 +114,12 @@ class NotificationSchema(BaseModel):
     reply_slug: Optional[str]
     is_read: bool = False
 
+    @validator("sender", pre=True)
+    def set_sender(cls, v):
+        if v.id:
+            return v
+        return None
+
 
 class ReadNotificationSchema(BaseModel):
     mark_all_as_read: bool

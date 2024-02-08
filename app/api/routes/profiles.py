@@ -297,11 +297,6 @@ async def accept_or_reject_friend_request(
             - Use post slug to navigate to the post.
             - Use comment slug to navigate to the comment.
             - Use reply slug to navigate to the reply.
-
-        WEBSOCKET ENDPOINT: /api/v4/ws/notifications/ e.g (ws://{host}/api/v4/ws/notifications/) 
-            NOTE:
-            * This endpoint requires authorization, so pass in the Authorization header with Bearer and its value.
-            * You can only read and not send notification messages into this socket.
     """,
 )
 async def retrieve_user_notifications(

@@ -1,5 +1,6 @@
 from app.common.handlers import ErrorCode
 from app.models.accounts.tables import User
+from app.models.profiles.tables import Notification
 
 BASE_URL_PATH = "/api/v3/profiles"
 
@@ -202,3 +203,34 @@ async def test_accept_or_reject_friend_request(another_authorized_client, friend
         "message": "Friend Request Accepted",
     }
     # You can test for other error responses yourself.....
+
+
+async def test_retrieve_notifications(authorized_client, verified_user):
+    notification = await Notification.objects().create(
+        ntype="ADMIN", text="A new update is coming!", receiver_ids=[verified_user.id]
+    )
+
+    # Test for valid response
+    response = await authorized_client.get(f"{BASE_URL_PATH}/notifications")
+    assert response.status_code == 200
+    assert response.json() == {
+        "status": "success",
+        "message": "Notifications fetched",
+        "data": {
+            "per_page": 20,
+            "current_page": 1,
+            "last_page": 1,
+            "notifications": [
+                {
+                    "id": str(notification.id),
+                    "sender": None,
+                    "ntype": notification.ntype,
+                    "message": notification.message,
+                    "post_slug": None,
+                    "comment_slug": None,
+                    "reply_slug": None,
+                    "is_read": False,
+                }
+            ],
+        },
+    }
