@@ -1,3 +1,4 @@
+import uuid
 from app.common.handlers import ErrorCode
 from app.models.accounts.tables import User
 from app.models.profiles.tables import Notification
@@ -233,4 +234,30 @@ async def test_retrieve_notifications(authorized_client, verified_user):
                 }
             ],
         },
+    }
+
+
+async def test_read_notification(authorized_client, verified_user):
+    notification = await Notification.objects().create(
+        ntype="ADMIN", text="A new update is coming!", receiver_ids=[verified_user.id]
+    )
+
+    data = {"id": str(uuid.uuid4()), "mark_all_as_read": False}
+
+    # Test for invalid response for non-existent id
+    response = await authorized_client.post(f"{BASE_URL_PATH}/notifications", json=data)
+    assert response.status_code == 404
+    assert response.json() == {
+        "status": "failure",
+        "code": ErrorCode.NON_EXISTENT,
+        "message": "User has no notification with that ID",
+    }
+
+    # Test for valid response for valid inputs
+    data["id"] = str(notification.id)
+    response = await authorized_client.post(f"{BASE_URL_PATH}/notifications", json=data)
+    assert response.status_code == 200
+    assert response.json() == {
+        "status": "success",
+        "message": "Notification read",
     }
