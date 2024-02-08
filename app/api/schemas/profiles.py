@@ -65,7 +65,7 @@ class DeleteUserSchema(BaseModel):
 
 
 class ProfilesResponseDataSchema(PaginatedResponseDataSchema):
-    users: List[ProfileSchema] = Field(..., alias="items")
+    items: List[ProfileSchema] = Field(..., serialization_alias="users")
 
 
 class ProfilesResponseSchema(ResponseSchema):
@@ -127,7 +127,7 @@ class ReadNotificationSchema(BaseModel):
 
 
 class NotificationsResponseDataSchema(PaginatedResponseDataSchema):
-    notifications: List[NotificationSchema] = Field(..., alias="items")
+    items: List[NotificationSchema] = Field(..., serialization_alias="notifications")
 
 
 class NotificationsResponseSchema(ResponseSchema):

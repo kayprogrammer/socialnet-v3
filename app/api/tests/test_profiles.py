@@ -113,3 +113,32 @@ async def test_delete_profile(authorized_client, verified_user, mocker):
         "message": "User deleted",
     }
 
+
+async def test_retrieve_friends(authorized_client, friend, mocker):
+    friend = friend.requestee
+    # Test for valid response
+    response = await authorized_client.get(f"{BASE_URL_PATH}/friends")
+    assert response.status_code == 200
+    assert response.json() == {
+        "status": "success",
+        "message": "Friends fetched",
+        "data": {
+            "per_page": 20,
+            "current_page": 1,
+            "last_page": 1,
+            "users": [
+                {
+                    "first_name": friend.first_name,
+                    "last_name": friend.last_name,
+                    "username": friend.username,
+                    "email": friend.email,
+                    "bio": friend.bio,
+                    "avatar": friend.get_avatar,
+                    "dob": str(friend.dob),
+                    "city": None,
+                    "created_at": mocker.ANY,
+                    "updated_at": mocker.ANY,
+                }
+            ],
+        },
+    }

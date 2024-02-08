@@ -71,7 +71,7 @@ async def retrieve_cities(name: str = None) -> CitiesResponseSchema:
             .where(City.name.ilike(f"%{name}%"))
             .limit(10)
         )
-    if len(cities) == 0:
+    if not cities:
         message = "No match found"
     return {"message": message, "data": cities}
 
@@ -182,7 +182,7 @@ async def retrieve_friends(
         for friend in friends
     ]
     friends = []
-    if len(friend_ids) > 0:
+    if friend_ids:
         friends = User.objects(User.avatar, User.city).where(User.id.is_in(friend_ids))
 
     # Return paginated data
@@ -204,7 +204,7 @@ async def retrieve_friend_requests(
     )
     pending_friend_ids = [friend["requester"] for friend in pending_friends]
     friends = []
-    if len(pending_friend_ids) > 0:
+    if pending_friend_ids:
         friends = User.objects(User.avatar, User.city).where(
             User.id.is_in(pending_friend_ids)
         )

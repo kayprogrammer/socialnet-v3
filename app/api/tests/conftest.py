@@ -13,6 +13,8 @@ from app.models.base.tables import File
 from app.models.feed.tables import Post
 import pytest, asyncio, os
 
+from app.models.profiles.tables import Friend
+
 os.environ["ENVIRONMENT"] = "testing"
 test_db = factories.postgresql_proc(port=None, dbname="test_db")
 TABLES = Finder().get_table_classes()
@@ -94,7 +96,7 @@ async def another_verified_user():
         "first_name": "AnotherTest",
         "last_name": "UserVerified",
         "email": "anothertestverifieduser@example.com",
-        "password": "anothertestverifieduser123",
+        "password": "anothertestveuser",
         "is_email_verified": True,
     }
 
@@ -137,3 +139,15 @@ async def city():
     city.country = country
     city.region = region
     return city
+
+
+@pytest.fixture
+async def friend(verified_user: User, another_verified_user: User):
+    friend = await Friend.objects().create(
+        requester=verified_user.id,
+        requestee=another_verified_user.id,
+        status="ACCEPTED",
+    )
+    friend.requester = verified_user
+    friend.requestee = another_verified_user
+    return friend
