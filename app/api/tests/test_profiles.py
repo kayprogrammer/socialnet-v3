@@ -89,3 +89,27 @@ async def test_update_profile(authorized_client, verified_user, mocker):
             "file_upload_data": None,
         },
     }
+
+
+async def test_delete_profile(authorized_client, verified_user, mocker):
+    user_data = {"password": "invalid_pass"}
+
+    # Test for valid response for invalid entry
+    response = await authorized_client.post(f"{BASE_URL_PATH}/profile", json=user_data)
+    assert response.status_code == 422
+    assert response.json() == {
+        "status": "failure",
+        "message": "Invalid Entry",
+        "code": ErrorCode.INVALID_CREDENTIALS,
+        "data": {"password": "Incorrect password"},
+    }
+
+    # Test for valid response for valid entry
+    user_data["password"] = "testpassword"
+    response = await authorized_client.post(f"{BASE_URL_PATH}/profile", json=user_data)
+    assert response.status_code == 200
+    assert response.json() == {
+        "status": "success",
+        "message": "User deleted",
+    }
+
