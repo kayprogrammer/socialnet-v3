@@ -11,7 +11,7 @@ from httpx import AsyncClient
 from app.models.accounts.tables import City, Country, Region, User
 from app.models.base.tables import File
 from app.models.chat.tables import Chat, Message
-from app.models.feed.tables import Post
+from app.models.feed.tables import Comment, Post, Reaction, Reply
 import pytest, asyncio, os
 
 from app.models.profiles.tables import Friend
@@ -21,6 +21,7 @@ test_db = factories.postgresql_proc(port=None, dbname="test_db")
 TABLES = Finder().get_table_classes()
 
 
+# GENERAL FIXTURES
 @pytest.fixture(scope="session")
 def event_loop():
     """Overrides pytest default function scoped event loop"""
@@ -66,6 +67,10 @@ async def client():
         yield client
 
 
+# -------------------------------------------------------------------------------
+
+
+# AUTH FIXTURES
 @pytest.fixture
 async def test_user():
     user_dict = {
@@ -135,50 +140,79 @@ async def another_authorized_client(another_verified_user: User, client):
     return client
 
 
-@pytest.fixture
-async def create_post(verified_user):
-    # Create File
-    file = await File.objects().create(resource_type="image/jpeg")
+# -------------------------------------------------------------------------------
 
+
+# FEED FIXTURES
+@pytest.fixture
+async def post(verified_user):
     # Create Post
     post = await Post.objects().create(
-        author=verified_user.id, text="New Post", image=file.id
+        author=verified_user, text="This is a nice new platform"
     )
-    post.author = verified_user
     return post
 
 
 @pytest.fixture
+async def reaction(post):
+    # Create Reaction
+    author = post.author
+    reaction = await Reaction.objects().create(author=author, rtype="LIKE", post=post)
+    return reaction
+
+
+@pytest.fixture
+async def comment(post):
+    # Create Comment
+    author = post.author
+    comment = await Comment.objects().create(
+        author=author, text="Just a comment", post=post
+    )
+    return comment
+
+
+@pytest.fixture
+async def reply(comment):
+    # Create Reply
+    author = comment.author
+    reply = await Reply.objects().create(
+        author=author, text="Simple reply", comment=comment
+    )
+    return reply
+
+
+# -------------------------------------------------------------------------------
+
+
+# PROFILE FIXTURES
+@pytest.fixture
 async def city():
     country = await Country.objects().create(name="TestCountry", code="TC")
-    region = await Region.objects().create(name="TestRegion", country=country.id)
-    city = await City.objects().create(
-        name="TestCity", region=region.id, country=country.id
-    )
-    city.country = country
-    city.region = region
+    region = await Region.objects().create(name="TestRegion", country=country)
+    city = await City.objects().create(name="TestCity", region=region, country=country)
     return city
 
 
 @pytest.fixture
 async def friend(verified_user: User, another_verified_user: User):
     friend = await Friend.objects().create(
-        requester=verified_user.id,
-        requestee=another_verified_user.id,
+        requester=verified_user,
+        requestee=another_verified_user,
         status="ACCEPTED",
     )
-    friend.requester = verified_user
-    friend.requestee = another_verified_user
     return friend
 
 
+# -------------------------------------------------------------------------------
+
+
+# CHAT FIXTURES
 @pytest.fixture
 async def chat(verified_user, another_verified_user):
     # Create Chat
     chat = await Chat.objects().create(
         owner=verified_user, user_ids=[another_verified_user.id]
     )
-    chat.owner = verified_user
     return chat
 
 
@@ -192,7 +226,6 @@ async def group_chat(verified_user, another_verified_user):
         ctype="GROUP",
         description="This is the description of my group chat",
     )
-    chat.owner = verified_user
     return chat
 
 
@@ -200,8 +233,9 @@ async def group_chat(verified_user, another_verified_user):
 async def message(chat):
     # Create Message
     message = await Message.objects().create(
-        chat=chat.id, sender=chat.owner.id, text="Hello Boss"
+        chat=chat, sender=chat.owner, text="Hello Boss"
     )
-    message.chat = chat
-    message.sender = chat.owner
     return message
+
+
+# -------------------------------------------------------------------------------
