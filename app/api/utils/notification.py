@@ -1,7 +1,6 @@
 from app.core.config import settings
-import websockets
-import json
 from app.api.schemas.profiles import NotificationSchema
+import websockets, json, os
 
 
 def get_notification_message(obj):
@@ -25,6 +24,8 @@ def get_notification_message(obj):
 async def send_notification_in_socket(
     secured: bool, host: str, notification: object, status: str = "CREATED"
 ):
+    if os.environ["ENVIRONMENT"] == "testing":
+        return
     websocket_scheme = "wss://" if secured else "ws://"
     uri = f"{websocket_scheme}{host}/api/v3/ws/notifications"
     notification_data = {

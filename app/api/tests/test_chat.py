@@ -225,3 +225,47 @@ async def test_delete_message(authorized_client, message):
         "status": "success",
         "message": "Message deleted",
     }
+
+
+async def test_create_group_chat(authorized_client, another_verified_user, mocker):
+    chat_data = {
+        "name": "New Group Chat",
+        "description": "JESUS is KING",
+        "usernames_to_add": ["invalid_username"],
+    }
+
+    # Verify the requests fails with invalid username
+    response = await authorized_client.post(
+        f"{BASE_URL_PATH}/groups/group", json=chat_data
+    )
+    assert response.status_code == 422
+    assert response.json() == {
+        "status": "failure",
+        "code": ErrorCode.INVALID_ENTRY,
+        "message": "Invalid Entry",
+        "data": {"usernames_to_add": "Enter at least one valid username"},
+    }
+
+    # Verify the requests suceeds with valid username
+    chat_data["usernames_to_add"] = [another_verified_user.username]
+    response = await authorized_client.post(
+        f"{BASE_URL_PATH}/groups/group", json=chat_data
+    )
+    assert response.status_code == 201
+    assert response.json() == {
+        "status": "success",
+        "message": "Chat created",
+        "data": {
+            "id": mocker.ANY,
+            "name": chat_data["name"],
+            "description": chat_data["description"],
+            "users": [
+                {
+                    "name": another_verified_user.full_name,
+                    "username": another_verified_user.username,
+                    "avatar": another_verified_user.get_avatar,
+                }
+            ],
+            "file_upload_data": None,
+        },
+    }
