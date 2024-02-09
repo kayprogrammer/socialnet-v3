@@ -10,7 +10,7 @@ from httpx import AsyncClient
 
 from app.models.accounts.tables import City, Country, Region, User
 from app.models.base.tables import File
-from app.models.chat.tables import Chat
+from app.models.chat.tables import Chat, Message
 from app.models.feed.tables import Post
 import pytest, asyncio, os
 
@@ -173,8 +173,21 @@ async def friend(verified_user: User, another_verified_user: User):
 
 
 @pytest.fixture
-async def chat(verified_user):
+async def chat(verified_user, another_verified_user):
     # Create Chat
-    chat = await Chat.objects().create(owner=verified_user)
+    chat = await Chat.objects().create(
+        owner=verified_user, user_ids=[another_verified_user.id]
+    )
     chat.owner = verified_user
     return chat
+
+
+@pytest.fixture
+async def message(chat):
+    # Create Message
+    message = await Message.objects().create(
+        chat=chat.id, sender=chat.owner.id, text="Hello Boss"
+    )
+    message.chat = chat
+    message.sender = chat.owner
+    return message

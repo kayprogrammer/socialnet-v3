@@ -29,7 +29,7 @@ class Chat(BaseModel):
     @property
     def get_image(self):
         image = self.image
-        if image.id:
+        if image and image.id:
             return FileProcessor.generate_file_url(
                 key=image.id,
                 folder="chats",
@@ -74,7 +74,7 @@ class Message(BaseModel):
     @property
     def get_file(self):
         file = self.file
-        if file.id:
+        if file and file.id:
             return FileProcessor.generate_file_url(
                 key=file.id,
                 folder="messages",
