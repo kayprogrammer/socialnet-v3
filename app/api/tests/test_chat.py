@@ -150,9 +150,7 @@ async def test_update_group_chat(authorized_client, group_chat, another_verified
     # You can test for other error responses yourself
 
 
-async def test_delete_group_chat(
-    authorized_client, group_chat, another_verified_user, mocker
-):
+async def test_delete_group_chat(authorized_client, group_chat):
     # Verify the requests fails with invalid chat id
     response = await authorized_client.delete(f"{BASE_URL_PATH}/{uuid.uuid4()}")
     assert response.status_code == 404
@@ -206,3 +204,24 @@ async def test_update_message(authorized_client, message, mocker):
         },
     }
     # You can test for other error responses yourself
+
+
+async def test_delete_message(authorized_client, message):
+    # Verify the requests fails with invalid message id
+    response = await authorized_client.delete(
+        f"{BASE_URL_PATH}/messages/{uuid.uuid4()}"
+    )
+    assert response.status_code == 404
+    assert response.json() == {
+        "status": "failure",
+        "code": ErrorCode.NON_EXISTENT,
+        "message": "User has no message with that ID",
+    }
+
+    # Verify the requests suceeds with valid message id
+    response = await authorized_client.delete(f"{BASE_URL_PATH}/messages/{message.id}")
+    assert response.status_code == 200
+    assert response.json() == {
+        "status": "success",
+        "message": "Message deleted",
+    }

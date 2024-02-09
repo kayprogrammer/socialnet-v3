@@ -16,6 +16,7 @@ from app.common.handlers import ErrorCode
 from app.core.config import settings
 from app.models.accounts.tables import User
 from app.models.chat.tables import Chat, Message
+import os
 
 chat_socket_router = APIRouter()
 
@@ -144,6 +145,8 @@ async def websocket_endpoint(
 async def send_message_deletion_in_socket(
     secured: bool, host: str, chat_id: UUID, message_id: UUID
 ):
+    if os.environ["ENVIRONMENT"] == "testing":
+        return
     websocket_scheme = "wss://" if secured else "ws://"
     uri = f"{websocket_scheme}{host}/api/v3/ws/chats/{chat_id}"
     chat_data = {
