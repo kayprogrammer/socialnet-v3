@@ -77,3 +77,53 @@ async def test_retrieve_post(client, post, mocker):
             "updated_at": mocker.ANY,
         },
     }
+
+
+async def test_update_post(
+    authorized_client, another_verified_user_tokens, post, mocker
+):
+    post_dict = {"text": "Post Text Updated"}
+
+    # Check if endpoint fails for invalid post
+    response = await authorized_client.put(
+        f"{BASE_URL_PATH}/posts/invalid_slug", json=post_dict
+    )
+    assert response.status_code == 404
+    assert response.json() == {
+        "status": "failure",
+        "code": ErrorCode.NON_EXISTENT,
+        "message": "Post does not exist",
+    }
+
+    # Check if endpoint fails for invalid owner
+    response = await authorized_client.put(
+        f"{BASE_URL_PATH}/posts/{post.slug}",
+        json=post_dict,
+        headers={"Authorization": f"Bearer {another_verified_user_tokens['access']}"},
+    )
+    assert response.status_code == 400
+    assert response.json() == {
+        "status": "failure",
+        "code": ErrorCode.INVALID_OWNER,
+        "message": "This Post isn't yours",
+    }
+
+    # Check if endpoint succeeds if all requirements are met
+    response = await authorized_client.put(
+        f"{BASE_URL_PATH}/posts/{post.slug}", json=post_dict
+    )
+    assert response.status_code == 200
+    assert response.json() == {
+        "status": "success",
+        "message": "Post updated",
+        "data": {
+            "author": mocker.ANY,
+            "text": post_dict["text"],
+            "slug": mocker.ANY,
+            "reactions_count": 0,
+            "comments_count": 0,
+            "created_at": mocker.ANY,
+            "updated_at": mocker.ANY,
+            "file_upload_data": None,
+        },
+    }

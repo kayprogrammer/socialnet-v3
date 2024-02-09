@@ -120,12 +120,11 @@ async def authorized_client(verified_user: User, client):
     verified_user.refresh_token = refresh
     await verified_user.save()
     client.headers = {**client.headers, "Authorization": f"Bearer {access}"}
-    client.user = verified_user
     return client
 
 
 @pytest.fixture
-async def another_authorized_client(another_verified_user: User, client):
+async def another_verified_user_tokens(another_verified_user: User):
     access = await Authentication.create_access_token(
         {
             "user_id": str(another_verified_user.id),
@@ -136,7 +135,15 @@ async def another_authorized_client(another_verified_user: User, client):
     another_verified_user.access_token = access
     another_verified_user.refresh_token = refresh
     await another_verified_user.save()
-    client.headers = {**client.headers, "Authorization": f"Bearer {access}"}
+    return {"access": access, "refresh": refresh}
+
+
+@pytest.fixture
+async def another_authorized_client(another_verified_user_tokens, client):
+    client.headers = {
+        **client.headers,
+        "Authorization": f"Bearer {another_verified_user_tokens['access']}",
+    }
     return client
 
 
