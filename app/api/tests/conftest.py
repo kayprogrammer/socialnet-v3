@@ -115,6 +115,7 @@ async def authorized_client(verified_user: User, client):
     verified_user.refresh_token = refresh
     await verified_user.save()
     client.headers = {**client.headers, "Authorization": f"Bearer {access}"}
+    client.user = verified_user
     return client
 
 
