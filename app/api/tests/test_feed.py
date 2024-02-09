@@ -25,3 +25,24 @@ async def test_retrieve_posts(client, post, mocker):
             ],
         },
     }
+
+
+async def test_create_post(authorized_client, mocker):
+    post_dict = {"text": "My new Post"}
+    response = await authorized_client.post(f"{BASE_URL_PATH}/posts", json=post_dict)
+    assert response.status_code == 201
+    print(response.json())
+    assert response.json() == {
+        "status": "success",
+        "message": "Post created",
+        "data": {
+            "author": mocker.ANY,
+            "text": post_dict["text"],
+            "slug": mocker.ANY,
+            "reactions_count": 0,
+            "comments_count": 0,
+            "created_at": mocker.ANY,
+            "updated_at": mocker.ANY,
+            "file_upload_data": None,
+        },
+    }
