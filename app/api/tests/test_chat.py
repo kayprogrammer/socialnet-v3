@@ -62,6 +62,7 @@ async def test_retrieve_chat_messages(
     # Verify the request succeeds with valid chat ID
     response = await authorized_client.get(f"{BASE_URL_PATH}/{chat.id}")
     assert response.status_code == 200
+    print(response.json())
     assert response.json() == {
         "status": "success",
         "message": "Messages fetched",
@@ -99,7 +100,7 @@ async def test_retrieve_chat_messages(
             },
             "users": [
                 {
-                    "full_name": another_verified_user.full_name,
+                    "name": another_verified_user.full_name,
                     "username": another_verified_user.username,
                     "avatar": another_verified_user.get_avatar,
                 }
