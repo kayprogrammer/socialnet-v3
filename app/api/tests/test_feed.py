@@ -127,3 +127,22 @@ async def test_update_post(
             "file_upload_data": None,
         },
     }
+
+
+async def test_delete_post(authorized_client, post):
+    # Check if endpoint fails for invalid post
+    response = await authorized_client.delete(f"{BASE_URL_PATH}/posts/invalid_slug")
+    assert response.status_code == 404
+    assert response.json() == {
+        "status": "failure",
+        "code": ErrorCode.NON_EXISTENT,
+        "message": "Post does not exist",
+    }
+
+    # Check if endpoint succeeds if all requirements are met
+    response = await authorized_client.delete(f"{BASE_URL_PATH}/posts/{post.slug}")
+    assert response.status_code == 200
+    assert response.json() == {
+        "status": "success",
+        "message": "Post deleted",
+    }

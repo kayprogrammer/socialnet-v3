@@ -129,7 +129,7 @@ async def update_post(
 
 
 @router.delete(
-    "/posts/{slug}/",
+    "/posts/{slug}",
     summary="Delete a Post",
     description="This endpoint deletes a post",
 )
