@@ -183,6 +183,20 @@ async def chat(verified_user, another_verified_user):
 
 
 @pytest.fixture
+async def group_chat(verified_user, another_verified_user):
+    # Create Group Chat
+    chat = await Chat.objects().create(
+        owner=verified_user,
+        user_ids=[another_verified_user.id],
+        name="My New Group",
+        ctype="GROUP",
+        description="This is the description of my group chat",
+    )
+    chat.owner = verified_user
+    return chat
+
+
+@pytest.fixture
 async def message(chat):
     # Create Message
     message = await Message.objects().create(

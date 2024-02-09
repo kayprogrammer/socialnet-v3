@@ -62,7 +62,6 @@ async def test_retrieve_chat_messages(
     # Verify the request succeeds with valid chat ID
     response = await authorized_client.get(f"{BASE_URL_PATH}/{chat.id}")
     assert response.status_code == 200
-    print(response.json())
     assert response.json() == {
         "status": "success",
         "message": "Messages fetched",
@@ -107,3 +106,47 @@ async def test_retrieve_chat_messages(
             ],
         },
     }
+
+
+async def test_update_group_chat(
+    authorized_client, group_chat, another_verified_user, mocker
+):
+    chat_data = {
+        "name": "Updated Group chat name",
+        "description": "Updated group chat description",
+    }
+
+    # Verify the requests fails with invalid chat id
+    response = await authorized_client.patch(
+        f"{BASE_URL_PATH}/{uuid.uuid4()}", json=chat_data
+    )
+    assert response.status_code == 404
+    assert response.json() == {
+        "status": "failure",
+        "code": ErrorCode.NON_EXISTENT,
+        "message": "User owns no group chat with that ID",
+    }
+
+    # Verify the requests suceeds with valid chat id
+    response = await authorized_client.patch(
+        f"{BASE_URL_PATH}/{group_chat.id}", json=chat_data
+    )
+    assert response.status_code == 200
+    assert response.json() == {
+        "status": "success",
+        "message": "Chat updated",
+        "data": {
+            "id": str(group_chat.id),
+            "name": chat_data["name"],
+            "description": chat_data["description"],
+            "users": [
+                {
+                    "name": another_verified_user.full_name,
+                    "username": another_verified_user.username,
+                    "avatar": another_verified_user.get_avatar,
+                }
+            ],
+            "file_upload_data": None,
+        },
+    }
+    # You can test for other error responses yourself
