@@ -10,6 +10,7 @@ from httpx import AsyncClient
 
 from app.models.accounts.tables import City, Country, Region, User
 from app.models.base.tables import File
+from app.models.chat.tables import Chat
 from app.models.feed.tables import Post
 import pytest, asyncio, os
 
@@ -142,7 +143,8 @@ async def create_post(verified_user):
     post = await Post.objects().create(
         author=verified_user.id, text="New Post", image=file.id
     )
-    return {"user": verified_user, "post": post}
+    post.author = verified_user
+    return post
 
 
 @pytest.fixture
@@ -167,3 +169,11 @@ async def friend(verified_user: User, another_verified_user: User):
     friend.requester = verified_user
     friend.requestee = another_verified_user
     return friend
+
+
+@pytest.fixture
+async def chat(verified_user):
+    # Create Chat
+    chat = await Chat.objects().create(owner=verified_user)
+    chat.owner = verified_user
+    return chat
