@@ -19,7 +19,8 @@ class CreateData(object):
             "last_name": "Admin",
             "email": settings.FIRST_SUPERUSER_EMAIL,
             "password": settings.FIRST_SUPERUSER_PASSWORD,
-            "is_staff": True,
+            "admin": True,
+            "superuser": True,
             "is_email_verified": True,
         }
         if not superuser:

@@ -66,16 +66,8 @@ class User(BaseModel, tablename="base_user"):
     terms_agreement = Boolean(default=False)
     active = Boolean(default=False)
     is_email_verified = Boolean(default=False)
-    admin = Boolean(
-        default=False, help_text="An admin can log into the Piccolo admin GUI."
-    )
-    superuser = Boolean(
-        default=False,
-        help_text=(
-            "If True, this user can manage other users's passwords in the "
-            "Piccolo admin GUI."
-        ),
-    )
+    admin = Boolean(default=False)
+    superuser = Boolean(default=False)
     last_login = Timestamptz(
         null=True,
         default=None,
