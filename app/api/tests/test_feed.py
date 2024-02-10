@@ -416,3 +416,34 @@ async def test_delete_comment(authorized_client, comment, mocker):
         "status": "success",
         "message": "Comment Deleted",
     }
+
+
+async def test_retrieve_reply(client, reply):
+    user = reply.author
+
+    # Test for invalid reply slug
+    response = await client.get(f"{BASE_URL_PATH}/replies/invalid_slug")
+    assert response.status_code == 404
+    assert response.json() == {
+        "status": "failure",
+        "message": "Reply does not exist",
+        "code": ErrorCode.NON_EXISTENT,
+    }
+
+    # Test for valid values
+    response = await client.get(f"{BASE_URL_PATH}/replies/{reply.slug}")
+    assert response.status_code == 200
+    assert response.json() == {
+        "status": "success",
+        "message": "Reply Fetched",
+        "data": {
+            "author": {
+                "name": user.full_name,
+                "username": user.username,
+                "avatar": user.get_avatar,
+            },
+            "slug": reply.slug,
+            "text": reply.text,
+            "reactions_count": 0,
+        },
+    }
