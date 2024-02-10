@@ -447,3 +447,27 @@ async def test_retrieve_reply(client, reply):
             "reactions_count": 0,
         },
     }
+
+
+async def test_update_reply(authorized_client, reply, mocker):
+    user = reply.author
+    reply_data = {"text": "New updated reply"}
+
+    response = await authorized_client.put(
+        f"{BASE_URL_PATH}/replies/{reply.slug}", json=reply_data
+    )
+    assert response.status_code == 200
+    assert response.json() == {
+        "status": "success",
+        "message": "Reply Updated",
+        "data": {
+            "author": {
+                "name": user.full_name,
+                "username": user.username,
+                "avatar": user.get_avatar,
+            },
+            "slug": mocker.ANY,
+            "text": reply_data["text"],
+            "reactions_count": 0,
+        },
+    }
