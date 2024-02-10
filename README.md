@@ -48,15 +48,15 @@ OR
     $ make test
 ```
 
-![alt text](https://github.com/kayprogrammer/socialnet-v3/blob/main/display/display1.png?raw=true)
-![alt text](https://github.com/kayprogrammer/socialnet-v3/blob/main/display/display2.png?raw=true)
-![alt text](https://github.com/kayprogrammer/socialnet-v3/blob/main/display/display3.png?raw=true)
-![alt text](https://github.com/kayprogrammer/socialnet-v3/blob/main/display/display4.png?raw=true)
-![alt text](https://github.com/kayprogrammer/socialnet-v3/blob/main/display/display5.png?raw=true)
-![alt text](https://github.com/kayprogrammer/socialnet-v3/blob/main/display/display6.png?raw=true)
-![alt text](https://github.com/kayprogrammer/socialnet-v3/blob/main/display/display7.png?raw=true)
-![alt text](https://github.com/kayprogrammer/socialnet-v3/blob/main/display/display8.png?raw=true)
-![alt text](https://github.com/kayprogrammer/socialnet-v3/blob/main/display/display9.png?raw=true)
-![alt text](https://github.com/kayprogrammer/socialnet-v3/blob/main/display/display10.png?raw=true)
+![alt text](https://github.com/kayprogrammer/socialnet-v3/blob/main/display/disp1.png?raw=true)
+![alt text](https://github.com/kayprogrammer/socialnet-v3/blob/main/display/disp2.png?raw=true)
+![alt text](https://github.com/kayprogrammer/socialnet-v3/blob/main/display/disp3.png?raw=true)
+![alt text](https://github.com/kayprogrammer/socialnet-v3/blob/main/display/disp4.png?raw=true)
+![alt text](https://github.com/kayprogrammer/socialnet-v3/blob/main/display/disp5.png?raw=true)
+![alt text](https://github.com/kayprogrammer/socialnet-v3/blob/main/display/disp6.png?raw=true)
+![alt text](https://github.com/kayprogrammer/socialnet-v3/blob/main/display/disp7.png?raw=true)
+![alt text](https://github.com/kayprogrammer/socialnet-v3/blob/main/display/disp8.png?raw=true)
+![alt text](https://github.com/kayprogrammer/socialnet-v3/blob/main/display/disp9.png?raw=true)
+![alt text](https://github.com/kayprogrammer/socialnet-v3/blob/main/display/disp10.png?raw=true)
 
 ![alt text](https://github.com/kayprogrammer/socialnet-v3/blob/main/display/admin.png?raw=true)
