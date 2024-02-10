@@ -320,7 +320,6 @@ async def test_retrieve_comment_with_replies(client, reply):
     # Test for valid values
     response = await client.get(f"{BASE_URL_PATH}/comments/{comment.slug}")
     assert response.status_code == 200
-    print(response.json())
     assert response.json() == {
         "status": "success",
         "message": "Comment and Replies Fetched",
@@ -353,5 +352,29 @@ async def test_retrieve_comment_with_replies(client, reply):
                     }
                 ],
             },
+        },
+    }
+
+
+async def test_create_reply(authorized_client, comment, mocker):
+    user = comment.author
+    reply_data = {"text": "New Cool reply"}
+
+    response = await authorized_client.post(
+        f"{BASE_URL_PATH}/comments/{comment.slug}", json=reply_data
+    )
+    assert response.status_code == 201
+    assert response.json() == {
+        "status": "success",
+        "message": "Reply Created",
+        "data": {
+            "author": {
+                "name": user.full_name,
+                "username": user.username,
+                "avatar": user.get_avatar,
+            },
+            "slug": mocker.ANY,
+            "text": reply_data["text"],
+            "reactions_count": 0
         },
     }
