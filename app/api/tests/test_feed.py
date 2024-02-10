@@ -375,6 +375,31 @@ async def test_create_reply(authorized_client, comment, mocker):
             },
             "slug": mocker.ANY,
             "text": reply_data["text"],
-            "reactions_count": 0
+            "reactions_count": 0,
+        },
+    }
+
+
+async def test_update_comment(authorized_client, comment, mocker):
+    user = comment.author
+    comment_data = {"text": "New updated comment"}
+
+    response = await authorized_client.put(
+        f"{BASE_URL_PATH}/comments/{comment.slug}", json=comment_data
+    )
+    assert response.status_code == 200
+    assert response.json() == {
+        "status": "success",
+        "message": "Comment Updated",
+        "data": {
+            "author": {
+                "name": user.full_name,
+                "username": user.username,
+                "avatar": user.get_avatar,
+            },
+            "slug": mocker.ANY,
+            "text": comment_data["text"],
+            "reactions_count": 0,
+            "replies_count": mocker.ANY,
         },
     }
