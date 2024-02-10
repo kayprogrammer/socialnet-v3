@@ -33,7 +33,7 @@ init:
 	python initials/initial_data.py
 
 tests:
-	pytest app/api/tests/test_feed.py --disable-warnings -vv -x
+	pytest --disable-warnings -vv -x
 
 reqm:
 	pip install -r requirements.txt
