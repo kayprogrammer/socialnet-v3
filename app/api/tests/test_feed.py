@@ -403,3 +403,16 @@ async def test_update_comment(authorized_client, comment, mocker):
             "replies_count": mocker.ANY,
         },
     }
+
+
+async def test_delete_comment(authorized_client, comment, mocker):
+    user = comment.author
+
+    response = await authorized_client.delete(
+        f"{BASE_URL_PATH}/comments/{comment.slug}"
+    )
+    assert response.status_code == 200
+    assert response.json() == {
+        "status": "success",
+        "message": "Comment Deleted",
+    }
