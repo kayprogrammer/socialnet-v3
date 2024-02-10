@@ -235,7 +235,6 @@ async def test_delete_reaction(authorized_client, reaction):
         "status": "success",
         "message": "Reaction deleted",
     }
-
     # You can test for other error responses yourself
 
 
@@ -302,6 +301,7 @@ async def test_create_comment(authorized_client, post, mocker):
             "replies_count": 0,
         },
     }
+    # You can test for other error responses yourself
 
 
 async def test_retrieve_comment_with_replies(client, reply):
@@ -378,6 +378,7 @@ async def test_create_reply(authorized_client, comment, mocker):
             "reactions_count": 0,
         },
     }
+    # You can test for other error responses yourself
 
 
 async def test_update_comment(authorized_client, comment, mocker):
@@ -403,11 +404,10 @@ async def test_update_comment(authorized_client, comment, mocker):
             "replies_count": mocker.ANY,
         },
     }
+    # You can test for other error responses yourself
 
 
-async def test_delete_comment(authorized_client, comment, mocker):
-    user = comment.author
-
+async def test_delete_comment(authorized_client, comment):
     response = await authorized_client.delete(
         f"{BASE_URL_PATH}/comments/{comment.slug}"
     )
@@ -416,6 +416,7 @@ async def test_delete_comment(authorized_client, comment, mocker):
         "status": "success",
         "message": "Comment Deleted",
     }
+    # You can test for other error responses yourself
 
 
 async def test_retrieve_reply(client, reply):
@@ -471,3 +472,14 @@ async def test_update_reply(authorized_client, reply, mocker):
             "reactions_count": 0,
         },
     }
+    # You can test for other error responses yourself
+
+
+async def test_delete_reply(authorized_client, reply):
+    response = await authorized_client.delete(f"{BASE_URL_PATH}/replies/{reply.slug}")
+    assert response.status_code == 200
+    assert response.json() == {
+        "status": "success",
+        "message": "Reply Deleted",
+    }
+    # You can test for other error responses yourself
