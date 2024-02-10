@@ -1,5 +1,5 @@
 from app.common.handlers import ErrorCode
-
+import uuid
 
 BASE_URL_PATH = "/api/v3/feed"
 
@@ -214,3 +214,26 @@ async def test_create_reaction(authorized_client, post, mocker):
             "rtype": reaction_dict["rtype"],
         },
     }
+
+
+async def test_delete_reaction(authorized_client, reaction):
+    # Test for invalid reaction id
+    response = await authorized_client.delete(
+        f"{BASE_URL_PATH}/reactions/{uuid.uuid4()}"
+    )
+    assert response.status_code == 404
+    assert response.json() == {
+        "status": "failure",
+        "message": "Reaction does not exist",
+        "code": ErrorCode.NON_EXISTENT,
+    }
+    response = await authorized_client.delete(
+        f"{BASE_URL_PATH}/reactions/{reaction.id}"
+    )
+    assert response.status_code == 200
+    assert response.json() == {
+        "status": "success",
+        "message": "Reaction deleted",
+    }
+
+    # You can test for other error responses yourself
