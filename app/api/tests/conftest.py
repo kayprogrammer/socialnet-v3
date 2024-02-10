@@ -164,7 +164,7 @@ async def post(verified_user):
 async def reaction(post):
     # Create Reaction
     author = post.author
-    reaction = await Reaction.objects().create(author=author, rtype="LIKE", post=post)
+    reaction = await Reaction.objects().create(user=author, rtype="LIKE", post=post)
     return reaction
 
 

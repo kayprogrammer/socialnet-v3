@@ -146,3 +146,71 @@ async def test_delete_post(authorized_client, post):
         "status": "success",
         "message": "Post deleted",
     }
+
+
+async def test_retrieve_reactions(client, reaction):
+    author = reaction.user
+    post = reaction.post
+    # Test for invalid focus_value
+    response = await client.get(f"{BASE_URL_PATH}/reactions/invalid_focus/{post.slug}")
+    assert response.status_code == 404
+    assert response.json() == {
+        "status": "failure",
+        "message": "Invalid 'focus' value",
+        "code": ErrorCode.INVALID_VALUE,
+    }
+
+    # Test for invalid slug
+    response = await client.get(f"{BASE_URL_PATH}/reactions/POST/invalid_slug")
+    assert response.status_code == 404
+    assert response.json() == {
+        "status": "failure",
+        "message": "Post does not exist",
+        "code": ErrorCode.NON_EXISTENT,
+    }
+
+    # Test for valid values
+    response = await client.get(f"{BASE_URL_PATH}/reactions/POST/{post.slug}")
+    assert response.status_code == 200
+    assert response.json() == {
+        "status": "success",
+        "message": "Reactions fetched",
+        "data": {
+            "per_page": 50,
+            "current_page": 1,
+            "last_page": 1,
+            "reactions": [
+                {
+                    "id": str(reaction.id),
+                    "user": {
+                        "name": author.full_name,
+                        "username": author.username,
+                        "avatar": author.get_avatar,
+                    },
+                    "rtype": reaction.rtype,
+                }
+            ],
+        },
+    }
+
+
+async def test_create_reaction(authorized_client, post, mocker):
+    user = post.author
+    reaction_dict = {"rtype": "LOVE"}
+    response = await authorized_client.post(
+        f"{BASE_URL_PATH}/reactions/POST/{post.slug}", json=reaction_dict
+    )
+    assert response.status_code == 201
+    assert response.json() == {
+        "status": "success",
+        "message": "Reaction created",
+        "data": {
+            "id": mocker.ANY,
+            "user": {
+                "name": user.full_name,
+                "username": user.username,
+                "avatar": user.get_avatar,
+            },
+            "rtype": reaction_dict["rtype"],
+        },
+    }
