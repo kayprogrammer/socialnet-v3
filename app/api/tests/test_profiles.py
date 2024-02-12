@@ -92,7 +92,7 @@ async def test_update_profile(authorized_client, verified_user, mocker):
     }
 
 
-async def test_delete_profile(authorized_client, verified_user, mocker):
+async def test_delete_profile(authorized_client):
     user_data = {"password": "invalid_pass"}
 
     # Test for valid response for invalid entry
