@@ -3,7 +3,6 @@ from app.models.accounts.tables import User
 from app.models.general.tables import SiteDetail
 from piccolo.apps.user.tables import BaseUser
 
-
 class CreateData(object):
     async def initialize(self) -> None:
         await self.create_superuser()
