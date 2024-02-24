@@ -9,7 +9,6 @@ from pytest_postgresql.janitor import DatabaseJanitor
 from httpx import AsyncClient
 
 from app.models.accounts.tables import City, Country, Region, User
-from app.models.base.tables import File
 from app.models.chat.tables import Chat, Message
 from app.models.feed.tables import Comment, Post, Reaction, Reply
 import pytest, asyncio, os

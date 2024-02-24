@@ -37,7 +37,7 @@ async def test_register_user(client):
     }
 
 
-async def test_verify_email(mocker, client, test_user):
+async def test_verify_email(client, test_user):
     otp = "111111"
 
     # Verify that the email verification fails with an invalid otp
@@ -64,7 +64,7 @@ async def test_verify_email(mocker, client, test_user):
     }
 
 
-async def test_resend_verification_email(mocker, client, test_user):
+async def test_resend_verification_email(client, test_user):
     user_in = {"email": test_user.email}
 
     # Verify that an unverified user can get a new email
@@ -205,7 +205,7 @@ async def test_get_password_otp(mocker, client, verified_user):
     }
 
 
-async def test_reset_password(mocker, client, verified_user):
+async def test_reset_password(client, verified_user):
     password_reset_data = {
         "email": verified_user.email,
         "password": "newverifieduserpass",

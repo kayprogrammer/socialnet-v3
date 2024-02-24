@@ -87,7 +87,7 @@ def validation_exception_handler(request, exc: RequestValidationError):
         except:
             field_name = error["loc"][0]
 
-        modified_details[f"{field_name}"] = err_msg
+        modified_details[field_name] = err_msg
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         content={
