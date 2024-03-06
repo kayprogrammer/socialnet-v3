@@ -34,7 +34,7 @@ class ChatSocketManager(BaseSocketConnectionManager):
             await self.validate_chat_membership(websocket, chat_id)
         self.active_connections.append(websocket)
 
-    async def validate_chat_membership(self, websocket: WebSocket, id: UUID):
+    async def validate_chat_membership(self, websocket: WebSocket, id: str):
         user = websocket.scope["user"]
         user_id = user.id
         chat, obj_user = await self.get_chat_or_user(websocket, user, id)
