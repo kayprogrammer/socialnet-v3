@@ -24,7 +24,7 @@ def get_notification_message(obj):
 async def send_notification_in_socket(
     secured: bool, host: str, notification: object, status: str = "CREATED"
 ):
-    if os.environ["ENVIRONMENT"] == "testing":
+    if os.environ.get("ENVIRONMENT") == "testing":
         return
     websocket_scheme = "wss://" if secured else "ws://"
     uri = f"{websocket_scheme}{host}/api/v3/ws/notifications"
